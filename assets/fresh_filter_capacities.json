@@ -1,0 +1,5 @@
+{
+    "_comment": "This JSON contains settings for the Fresh Water Filter",
+    "bypass": "0%",
+    "capacities": {"C50": 15000}
+}

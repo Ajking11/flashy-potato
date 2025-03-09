@@ -1,0 +1,103 @@
+{
+    "1": [
+        { "range": [2, 5], "type": "Fresh" },
+        { "range": [6, 26], "type": "Finest" }
+    ],
+    "2": [
+        { "range": [3, 5], "type": "Fresh" },
+        { "range": [6, 27], "type": "Finest" }
+    ],
+    "3": [
+        { "range": [4, 5], "type": "Fresh" },
+        { "range": [6, 6], "type": "Standard" },
+        { "range": [7, 28], "type": "Finest" }
+    ],
+    "4": [
+        { "range": [5, 5], "type": "Fresh" },
+        { "range": [6, 8], "type": "Standard" },
+        { "range": [9, 29], "type": "Finest" }
+    ],
+    "5": [
+        { "range": [6, 10], "type": "Standard" },
+        { "range": [11, 30], "type": "Finest" }
+    ],
+    "6": [
+        { "range": [7, 12], "type": "Standard" },
+        { "range": [13, 31], "type": "Finest" }
+    ],
+    "7": [
+        { "range": [8, 14], "type": "Standard" },
+        { "range": [15, 32], "type": "Finest" }
+    ],
+    "8": [
+        { "range": [9, 16], "type": "Standard" },
+        { "range": [17, 33], "type": "Finest" }
+    ],
+    "9": [
+        { "range": [10, 18], "type": "Standard" },
+        { "range": [19, 34], "type": "Finest" }
+    ],
+    "10": [
+        { "range": [11, 20], "type": "Standard" },
+        { "range": [21, 35], "type": "Finest" }
+    ],
+    "11": [
+        { "range": [12, 22], "type": "Standard" },
+        { "range": [23, 36], "type": "Finest" }
+    ],
+    "12": [
+        { "range": [13, 24], "type": "Standard" },
+        { "range": [25, 37], "type": "Finest" }
+    ],
+    "13": [
+        { "range": [14, 26], "type": "Standard" },
+        { "range": [27, 38], "type": "Finest" }
+    ],
+    "14": [
+        { "range": [15, 28], "type": "Standard" },
+        { "range": [29, 39], "type": "Finest" }
+    ],
+    "15": [
+        { "range": [16, 30], "type": "Standard" },
+        { "range": [31, 40], "type": "Finest" }
+    ],
+    "16": [
+        { "range": [17, 32], "type": "Standard" },
+        { "range": [33, 41], "type": "Finest" }
+    ],
+    "17": [
+        { "range": [18, 34], "type": "Standard" },
+        { "range": [35, 42], "type": "Finest" }
+    ],
+    "18": [
+        { "range": [19, 36], "type": "Standard" },
+        { "range": [37, 43], "type": "Finest" }
+    ],
+    "19": [
+        { "range": [20, 38], "type": "Standard" },
+        { "range": [39, 44], "type": "Finest" }
+    ],
+    "20": [
+        { "range": [21, 40], "type": "Standard" },
+        { "range": [41, 45], "type": "Finest" }
+    ],
+    "21": [
+        { "range": [22, 42], "type": "Standard" },
+        { "range": [43, 46], "type": "Finest" }
+    ],
+    "22": [
+        { "range": [23, 44], "type": "Standard" },
+        { "range": [45, 47], "type": "Finest" }
+    ],
+    "23": [
+        { "range": [24, 46], "type": "Standard" },
+        { "range": [47, 48], "type": "Finest" }
+    ],
+    "24": [
+        { "range": [25, 48], "type": "Standard" },
+        { "range": [49, 49], "type": "Finest" }
+    ],
+    "25": [
+        { "range": [26, 50], "type": "Standard" }
+    ]
+}
