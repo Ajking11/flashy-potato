@@ -8,10 +8,12 @@ import '../constants.dart';
 
 class DocumentViewerScreen extends StatefulWidget {
   final TechnicalDocument document;
+  final String? filePath; // Optional externally provided filePath
 
   const DocumentViewerScreen({
     super.key,
     required this.document,
+    this.filePath,
   });
 
   @override
@@ -26,10 +28,18 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   bool _hasError = false;
   String _errorMessage = '';
 
+  // Returns the effective file path: uses the generated _pdfPath if available, otherwise falls back to widget.filePath.
+  String get effectiveFilePath => _pdfPath ?? widget.filePath ?? '';
+
   @override
   void initState() {
     super.initState();
-    _loadDocument();
+    // If no external filePath was provided, load the document.
+    if (widget.filePath == null) {
+      _loadDocument();
+    } else {
+      _isLoading = false;
+    }
   }
 
   Future<void> _loadDocument() async {
@@ -39,24 +49,26 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     });
 
     try {
-      // Simplified approach that should work on both emulator and device
-      debugPrint('Loading PDF');
-      final ByteData bytes = await rootBundle.load('assets/sample.pdf');
+      // Use the filePath provided by the document model (e.g., from your JSON)
+      final String assetPath = widget.document.filePath;
+      debugPrint('Loading PDF from: $assetPath');
+      final ByteData bytes = await rootBundle.load(assetPath);
       final dir = await getTemporaryDirectory();
-      
+
       // Ensure the directory exists
       if (!await dir.exists()) {
         await dir.create(recursive: true);
       }
-      
-      // Create the file with proper path separator
-      final String filePath = '${dir.path}${Platform.pathSeparator}sample.pdf';
+
+      // Create a unique file name using the document id
+      final String fileName = '${widget.document.id}.pdf';
+      final String filePath = '${dir.path}${Platform.pathSeparator}$fileName';
       final file = File(filePath);
-      
+
       // Write data to the file
       await file.writeAsBytes(bytes.buffer.asUint8List());
       debugPrint('Successfully wrote PDF to: ${file.path}');
-      
+
       setState(() {
         _pdfPath = file.path;
         _isLoading = false;
@@ -88,7 +100,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // In a real app, implement sharing functionality
+              // Implement share functionality here
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Share functionality would go here'),
@@ -100,7 +112,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       ),
       body: Stack(
         children: [
-          // PDF Viewer
           if (_isLoading)
             const Center(
               child: CircularProgressIndicator(
@@ -135,9 +146,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
                 ),
               ),
             )
-          else if (_pdfPath != null)
+          else if (effectiveFilePath.isNotEmpty)
             PDFView(
-              filePath: _pdfPath!,
+              filePath: effectiveFilePath,
               enableSwipe: true,
               swipeHorizontal: true,
               autoSpacing: false,
@@ -171,12 +182,11 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
               },
             )
           else
-            const Center(
-              child: Text('PDF file path is null'),
-            ),
-          
-          // Page indicator
-          if (!_isLoading && !_hasError && _totalPages > 0 && _pdfPath != null)
+            const Center(child: Text('PDF file path is null')),
+          if (!_isLoading &&
+              !_hasError &&
+              _totalPages > 0 &&
+              effectiveFilePath.isNotEmpty)
             Positioned(
               bottom: 16,
               left: 0,

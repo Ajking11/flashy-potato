@@ -119,6 +119,30 @@
     "fileSizeKB": 3150,
     "isDownloaded": false,
     "tags": ["manual", "quick reference", "schaerer", "soul", "s10", "operation"]
-    }
+    },
+    {
+    "id": "doc-011",
+    "title": "Schaerer SOUL S10 Installation Manual",
+    "description": "Complete installation manual for the Schaerer SOUL S10 with setup instructions and technical specifications.",
+    "machineId": "schaerer_souls10",
+    "category": "Manual",
+    "filePath": "assets/documents/S10_Installation_Manual.pdf",
+    "uploadDate": "2025-02-20T00:00:00Z",
+    "fileSizeKB": 3150,
+    "isDownloaded": false,
+    "tags": ["manual", "quick reference", "schaerer", "soul", "s10", "operation"]
+    },
+    {
+    "id": "doc-012",
+    "title": "Schaerer SOUL S10 Parts Catalog",
+    "description": "Complete parts listing for the Schaerer SOUL S10 with part numbers, diagrams, and ordering information.",
+    "machineId": "schaerer_souls10",
+    "category": "Parts Catalog",
+    "filePath": "assets/documents/Soul_S10_Spare_parts.pdf",
+    "uploadDate": "2025-02-20T00:00:00Z",
+    "fileSizeKB": 3150,
+    "isDownloaded": false,
+    "tags": ["manual", "quick reference", "schaerer", "soul", "s10", "operation"]
+}
 ]
 }

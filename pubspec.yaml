@@ -41,6 +41,8 @@ flutter:
     # Documents
     - assets/documents/
     - assets/documents/schaerer_scb_parts.pdf
+    - assets/documents/S10_Installation_Manual.pdf
+    - assets/documents/Soul_S10_Spare_Parts.pdf
     
     # Images
     - assets/images/c50.png
