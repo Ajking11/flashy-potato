@@ -19,34 +19,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool _isRefreshing = false;
-
-  Future<void> _refreshDashboard() async {
-    setState(() {
-      _isRefreshing = true;
-    });
-    
-    // Simulate checking for updates
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Update the "last checked" timestamp
-    if (mounted) {
-      Provider.of<PreferencesProvider>(context, listen: false).updateLastUpdateCheck();
-      setState(() {
-        _isRefreshing = false;
-      });
-      
-      // Show confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dashboard refreshed'),
-          duration: Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,110 +41,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshDashboard,
-        color: costaRed,
-        child: Consumer2<PreferencesProvider, DocumentProvider>(
-          builder: (context, prefsProvider, docProvider, child) {
-            if (_isRefreshing) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(costaRed),
-                ),
-              );
-            }
-            
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+      body: Consumer2<PreferencesProvider, DocumentProvider>(
+        builder: (context, prefsProvider, docProvider, child) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Main content with padding
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  const SizedBox(height: 16),
+                  // Updates & Notifications
+                  FadeAnimation(
+                    delay: const Duration(milliseconds: 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
-                        
-                        // Updates & Notifications
-                        FadeAnimation(
-                          delay: const Duration(milliseconds: 100),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionHeader('Updates & Notifications'),
-                              _buildUpdatesCard(context, prefsProvider, docProvider),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Quick Actions
-                        FadeAnimation(
-                          delay: const Duration(milliseconds: 200),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionHeader('Quick Actions'),
-                              _buildQuickActionsGrid(context),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Favorite Machines
-                        FadeAnimation(
-                          delay: const Duration(milliseconds: 300),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionHeader('Favorite Machines'),
-                              _buildFavoriteMachinesGrid(context, prefsProvider),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Recent Documents (only show if there are documents)
-                        if (docProvider.documents.isNotEmpty) ...[
-                          FadeAnimation(
-                            delay: const Duration(milliseconds: 400),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader('Recent Documents'),
-                                _buildRecentDocumentsCard(context, docProvider),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        
-                        // App version
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Text(
-                              'Version $appVersion',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
+                        _buildSectionHeader('Updates & Notifications'),
+                        _buildUpdatesCard(context, prefsProvider, docProvider),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Quick Actions
+                  FadeAnimation(
+                    delay: const Duration(milliseconds: 200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader('Quick Actions'),
+                        _buildQuickActionsGrid(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Favorite Machines
+                  FadeAnimation(
+                    delay: const Duration(milliseconds: 300),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader('Favorite Machines'),
+                        _buildFavoriteMachinesGrid(context, prefsProvider),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Recent Documents (only show if there are documents)
+                  if (docProvider.documents.isNotEmpty) ...[
+                    FadeAnimation(
+                      delay: const Duration(milliseconds: 400),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader('Recent Documents'),
+                          _buildRecentDocumentsCard(context, docProvider),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  // App version
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Version $appVersion',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -194,7 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(
             title,
             style: CostaTextStyle.subtitle1.copyWith(
-              fontSize: 16, // Slightly smaller font
+              fontSize: 16,
             ),
           ),
         ],
@@ -209,10 +155,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.water_drop,
         'color': Colors.blue,
         'onTap': () {
-          // Navigate to filter finder
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const FilterJsonScreen()),
+            MaterialPageRoute(
+              builder: (context) => FilterJsonScreen(
+                onDashboardPressed: () => Navigator.pop(context),
+              ),
+            ),
           );
         },
       },
@@ -221,10 +170,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.coffee,
         'color': Colors.brown,
         'onTap': () {
-          // Navigate to machines
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const MachineListScreen()),
+            MaterialPageRoute(
+              builder: (context) => MachineListScreen(
+                onDashboardPressed: () => Navigator.pop(context),
+              ),
+            ),
           );
         },
       },
@@ -233,10 +185,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.folder_outlined,
         'color': Colors.orange,
         'onTap': () {
-          // Navigate to documents
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const DocumentRepositoryScreen()),
+            MaterialPageRoute(
+              builder: (context) => const DocumentRepositoryScreen(),
+            ),
           );
         },
       },
@@ -245,7 +198,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.build_outlined,
         'color': Colors.green,
         'onTap': () {
-          // Show coming soon message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Maintenance feature coming soon'),
@@ -257,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return SizedBox(
-      height: 100, // Fixed height
+      height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: actions.length,
@@ -318,13 +270,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     PreferencesProvider prefsProvider,
     DocumentProvider docProvider,
   ) {
-    // For demo purposes, show a notification if last check was more than 3 days ago
     // ignore: unused_local_variable
     final isOutdated = DateTime.now().difference(prefsProvider.preferences.lastUpdateCheck).inDays > 3;
-    
-    // Count downloaded documents
     final downloadedCount = docProvider.documents.where((doc) => doc.isDownloaded).length;
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -333,7 +282,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: EdgeInsets.zero,
       child: Column(
         children: [
-          // New filter guidelines notice
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
@@ -363,7 +311,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.arrow_forward_ios, size: 16),
               onPressed: () {
-                // Navigate to the notice
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Detailed notice coming soon'),
@@ -378,10 +325,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: EdgeInsets.zero,
             ),
           ),
-          
           const Divider(height: 1),
-          
-          // Downloaded documents
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
@@ -411,7 +355,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.arrow_forward_ios, size: 16),
               onPressed: () {
-                // Navigate to document repository
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -471,10 +414,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Navigate to the machines list
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const MachineListScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => MachineListScreen(
+                        onDashboardPressed: () => Navigator.pop(context),
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.add, size: 16),
@@ -492,7 +438,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
     
-    // Filter machines list to show only favorites
     final allMachines = getMachines();
     final favoriteMachines = allMachines
         .where((machine) => favoriteIds.contains(machine.machineId))
@@ -530,7 +475,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Favorite button
                   Align(
                     alignment: Alignment.topRight,
                     child: InkWell(
@@ -545,8 +489,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  
-                  // Machine image
                   Expanded(
                     child: Image.asset(
                       machine.imagePath,
@@ -554,8 +496,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  
-                  // Machine name
                   Text(
                     machine.manufacturer,
                     textAlign: TextAlign.center,
@@ -566,8 +506,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
-                  // Machine model
                   Text(
                     machine.model,
                     textAlign: TextAlign.center,
@@ -590,10 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     BuildContext context,
     DocumentProvider docProvider,
   ) {
-    // Get the 3 most recent documents
-    final recentDocs = docProvider.documents
-      .take(3)
-      .toList();
+    final recentDocs = docProvider.documents.take(3).toList();
     
     if (recentDocs.isEmpty) {
       return Card(
@@ -629,7 +564,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Navigate to the documents repository
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const DocumentRepositoryScreen()),
@@ -705,7 +639,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       } else {
-                        // Download document
                         docProvider.downloadDocument(doc.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -727,8 +660,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             );
           }),
-          
-          // View all button
           InkWell(
             onTap: () {
               Navigator.push(

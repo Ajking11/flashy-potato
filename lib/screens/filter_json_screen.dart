@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/filter_provider.dart';
 import '../widgets/input_card.dart';
 import '../widgets/result_card.dart';
@@ -9,12 +8,16 @@ import '../widgets/fade_animation.dart';
 import '../constants.dart';
 
 class FilterJsonScreen extends StatefulWidget {
-  const FilterJsonScreen({super.key});
+  final VoidCallback onDashboardPressed;
+
+  const FilterJsonScreen({super.key, required this.onDashboardPressed});
+
   @override
   State<FilterJsonScreen> createState() => _FilterJsonScreenState();
 }
 
-class _FilterJsonScreenState extends State<FilterJsonScreen> with SingleTickerProviderStateMixin {
+class _FilterJsonScreenState extends State<FilterJsonScreen>
+    with SingleTickerProviderStateMixin {
   // Controllers for user input fields
   final TextEditingController tempHardnessController = TextEditingController();
   final TextEditingController totalHardnessController = TextEditingController();
@@ -22,7 +25,7 @@ class _FilterJsonScreenState extends State<FilterJsonScreen> with SingleTickerPr
 
   // Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   // Animation controller for loading spinner
   late AnimationController _loadingAnimationController;
 
@@ -70,45 +73,23 @@ class _FilterJsonScreenState extends State<FilterJsonScreen> with SingleTickerPr
   }
 
   // Build AppBar with consistent typography
-AppBar _buildAppBar(BuildContext context) {
-  return AppBar(
-    title: const Text(
-      'Water Filter Finder',
-      textAlign: TextAlign.center,
-      style: CostaTextStyle.appBarTitle,
-    ),
-    backgroundColor: costaRed,
-    elevation: 0.0,
-    centerTitle: true,
-    // Replace the existing leading widget with a back button
-    leading: IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        Navigator.of(context).pop();
-      },
-    ),
-  );
-}
-
-  // Helper function that returns the Container with the cup icon
-  /*
-  Widget _buildAppBarIcon(String assetPath) {
-    return Container(
-      margin: const EdgeInsets.all(10),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xffF7F8F8),
-        borderRadius: BorderRadius.circular(10),
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text(
+        'Water Filter Finder',
+        textAlign: TextAlign.center,
+        style: CostaTextStyle.appBarTitle,
       ),
-      child: SvgPicture.asset(
-        assetPath,
-        height: 20,
-        width: 20,
-        semanticsLabel: 'Costa Coffee cup icon',
+      backgroundColor: costaRed,
+      elevation: 0.0,
+      centerTitle: true,
+      // Use the onDashboardPressed callback from the parent for the back button
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: widget.onDashboardPressed,
       ),
     );
   }
-*/
 
   // Custom loading spinner with Costa branding
   Widget _buildLoadingSpinner() {

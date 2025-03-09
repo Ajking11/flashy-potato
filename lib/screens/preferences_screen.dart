@@ -1,4 +1,3 @@
-// preferences_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/preferences_provider.dart';
@@ -33,29 +32,32 @@ class PreferencesScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Theme section
-                _buildSectionHeader(context, 'Appearance'),
-                Card(
-                  margin: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        title: const Text('Dark Mode'),
-                        subtitle: const Text('Use dark theme throughout the app'),
-                        value: prefsProvider.isDarkMode,
-                        onChanged: (value) {
-                          prefsProvider.toggleDarkMode();
-                        },
-                        secondary: Icon(
-                          prefsProvider.isDarkMode 
-                              ? Icons.dark_mode 
-                              : Icons.light_mode,
-                          color: costaRed,
+                // Theme section (conditionally displayed)
+                if (showDarkModeToggle) ...[
+                  _buildSectionHeader(context, 'Appearance'),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          title: const Text('Dark Mode'),
+                          subtitle:
+                              const Text('Use dark theme throughout the app'),
+                          value: prefsProvider.isDarkMode,
+                          onChanged: (value) {
+                            prefsProvider.toggleDarkMode();
+                          },
+                          secondary: Icon(
+                            prefsProvider.isDarkMode
+                                ? Icons.dark_mode
+                                : Icons.light_mode,
+                            color: costaRed,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
 
                 // Notification section
                 _buildSectionHeader(context, 'Notifications'),
@@ -65,7 +67,8 @@ class PreferencesScreen extends StatelessWidget {
                     children: [
                       SwitchListTile(
                         title: const Text('Document Updates'),
-                        subtitle: const Text('Get notified when documents are updated'),
+                        subtitle: const Text(
+                            'Get notified when documents are updated'),
                         value: prefsProvider.preferences.notifyDocumentUpdates,
                         onChanged: (value) {
                           prefsProvider.updateNotificationPreferences(
@@ -80,7 +83,8 @@ class PreferencesScreen extends StatelessWidget {
                       const Divider(height: 1),
                       SwitchListTile(
                         title: const Text('Important Information'),
-                        subtitle: const Text('Get notified about important FSE information'),
+                        subtitle: const Text(
+                            'Get notified about important FSE information'),
                         value: prefsProvider.preferences.notifyImportantInfo,
                         onChanged: (value) {
                           prefsProvider.updateNotificationPreferences(
@@ -189,7 +193,6 @@ class PreferencesScreen extends StatelessWidget {
                         trailing: IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: () {
-                            // In a real app, check for updates here
                             prefsProvider.updateLastUpdateCheck();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -226,11 +229,10 @@ class PreferencesScreen extends StatelessWidget {
   }
 
   String _getMachineName(String machineId) {
-    // In a real app, you would look up the machine name from your data
-    // This is a simple implementation for demonstration
+    // In a real app, you would look up the machine name from your data.
     final parts = machineId.split('_');
     if (parts.length >= 2) {
-      return '${parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1)} ${parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1)}';
+      return '${parts[0][0].toUpperCase()}${parts[0].substring(1)} ${parts[1][0].toUpperCase()}${parts[1].substring(1)}';
     }
     return machineId;
   }
