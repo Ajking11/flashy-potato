@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../models/machine.dart';
+import '../providers/preferences_provider.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
 import 'machine_detail_screen.dart';
@@ -93,67 +95,89 @@ class MachineListScreen extends StatelessWidget {
     // Use same list of machines from original app
     final List<Machine> machines = getMachines();
     
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.85,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: machines.length,
-      itemBuilder: (context, index) {
-        final machine = machines[index];
-        return Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+    return Consumer<PreferencesProvider>(
+      builder: (context, prefsProvider, child) {
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.85,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
-          child: InkWell(
-            onTap: () {
-              // Navigate to machine details page
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MachineDetailScreen(machine: machine),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Machine image
-                  Expanded(
-                    child: Image.asset(
-                      machine.imagePath,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Machine manufacturer
-                  Text(
-                    machine.manufacturer,
-                    textAlign: TextAlign.center,
-                    style: CostaTextStyle.bodyText2.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  // Machine model
-                  Text(
-                    machine.model,
-                    textAlign: TextAlign.center,
-                    style: CostaTextStyle.subtitle2,
-                  ),
-                ],
+          itemCount: machines.length,
+          itemBuilder: (context, index) {
+            final machine = machines[index];
+            return Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
               ),
-            ),
-          ),
+              child: InkWell(
+                onTap: () {
+                  // Navigate to machine details page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MachineDetailScreen(machine: machine),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Favorite button
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          icon: Icon(
+                            prefsProvider.isMachineFavorite(machine.machineId)
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: prefsProvider.isMachineFavorite(machine.machineId)
+                                ? Colors.amber
+                                : Colors.grey,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            prefsProvider.toggleFavoriteMachine(machine.machineId);
+                          },
+                        ),
+                      ),
+                      // Machine image
+                      Expanded(
+                        child: Image.asset(
+                          machine.imagePath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Machine manufacturer
+                      Text(
+                        machine.manufacturer,
+                        textAlign: TextAlign.center,
+                        style: CostaTextStyle.bodyText2.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // Machine model
+                      Text(
+                        machine.model,
+                        textAlign: TextAlign.center,
+                        style: CostaTextStyle.subtitle2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
-      },
+      }
     );
   }
 }

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/filter_provider.dart';
 import '../widgets/input_card.dart';
 import '../widgets/result_card.dart';
 import '../widgets/result_card_shimmer.dart';
 import '../widgets/fade_animation.dart';
 import '../constants.dart';
-import '../services/session_manager.dart';
-import '../screens/login_screen.dart';
 
 class FilterJsonScreen extends StatefulWidget {
   const FilterJsonScreen({super.key});
@@ -82,21 +80,18 @@ AppBar _buildAppBar(BuildContext context) {
     backgroundColor: costaRed,
     elevation: 0.0,
     centerTitle: true,
-    leading: GestureDetector(
-      onTap: () {
-        // Clear session and navigate to login screen
-        SessionManager.clearSession();
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
-      }, 
-      child: _buildAppBarIcon('assets/icons/cup.svg'),
+    // Replace the existing leading widget with a back button
+    leading: IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
     ),
   );
 }
 
   // Helper function that returns the Container with the cup icon
+  /*
   Widget _buildAppBarIcon(String assetPath) {
     return Container(
       margin: const EdgeInsets.all(10),
@@ -113,6 +108,7 @@ AppBar _buildAppBar(BuildContext context) {
       ),
     );
   }
+*/
 
   // Custom loading spinner with Costa branding
   Widget _buildLoadingSpinner() {

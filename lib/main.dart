@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'providers/filter_provider.dart';
 import 'providers/document_provider.dart';
+import 'providers/preferences_provider.dart';
 import 'constants.dart';
 import 'screens/login_screen.dart';
 import 'services/session_manager.dart';
+import 'services/theme_service.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -19,26 +22,37 @@ class MyApp extends StatelessWidget {
       future: Future.wait([
         FilterProvider.initialize(),
         DocumentProvider.initialize(),
+        PreferencesProvider.initialize(),
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
+          final filterProvider = snapshot.data?[0] as FilterProvider? ?? FilterProvider();
+          final documentProvider = snapshot.data?[1] as DocumentProvider? ?? DocumentProvider();
+          final preferencesProvider = snapshot.data?[2] as PreferencesProvider? ?? PreferencesProvider();
+          
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<FilterProvider>.value(
-                value: snapshot.data?[0] as FilterProvider? ?? FilterProvider(),
+                value: filterProvider,
               ),
               ChangeNotifierProvider<DocumentProvider>.value(
-                value: snapshot.data?[1] as DocumentProvider? ?? DocumentProvider(),
+                value: documentProvider,
+              ),
+              ChangeNotifierProvider<PreferencesProvider>.value(
+                value: preferencesProvider,
               ),
             ],
-            child: MaterialApp(
-              title: 'Costa Coffee FSE Toolbox',
-              theme: ThemeData(
-                primarySwatch: Colors.blue,
-                fontFamily: 'CostaFont',
-              ),
-              debugShowCheckedModeBanner: false,
-              home: const SplashScreen(),
+            child: Consumer<PreferencesProvider>(
+              builder: (context, prefsProvider, child) {
+                return MaterialApp(
+                  title: 'Costa Coffee FSE Toolbox',
+                  theme: ThemeService.getLightTheme(),
+                  darkTheme: ThemeService.getDarkTheme(),
+                  themeMode: prefsProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+                  debugShowCheckedModeBanner: false,
+                  home: const SplashScreen(),
+                );
+              },
             ),
           );
         } else {

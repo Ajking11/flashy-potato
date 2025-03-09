@@ -18,8 +18,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isPasswordIncorrect = false;
   bool _isLoading = false;
   bool _isUnlocked = false;
-  late AnimationController _animationController;
-  late Animation<double> _slideAnimation;
 
   // Store the SHA-256 hash of "costa_coffee_techy"
   final String _hashedPassword = "58f92f9e3bbdd06d88a85ec7a09b8e88a17e1f63b0d42917f8006119c0259d6a";
@@ -27,39 +25,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    
-    // Initialize the animation controller
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    
-    // Create the slide animation
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
-    // Add listener to navigate after animation completes
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        // Navigate to app after animation completes
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const AppNavigator()),
-          );
-        }
-      }
-    });
   }
   
   @override
   void dispose() {
     _passwordController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -93,14 +63,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // Set logged in status
         SessionManager.setLoggedIn();
         
-        // Trigger unlock animation
+        // Update state to show authenticated
         setState(() {
           _isLoading = false;
           _isUnlocked = true;
         });
         
-        // Start the slide animation after unlocking
-        _animationController.forward();
+        // Navigate directly after a short delay
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const AppNavigator()),
+            );
+          }
+        });
       } else {
         // Password incorrect - show error
         setState(() {
@@ -133,33 +109,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Lock Icon with Animation
-                  AnimatedBuilder(
-                    animation: _slideAnimation,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _slideAnimation.value * 500),
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _isUnlocked ? Icons.lock_open : Icons.lock_outline,
-                            size: 80,
-                            color: costaRed,
-                          ),
+                  // Static lock icon (no animation)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
-                      );
-                    }
+                      ],
+                    ),
+                    child: Icon(
+                      _isUnlocked ? Icons.lock_open : Icons.lock_outline,
+                      size: 80,
+                      color: costaRed,
+                    ),
                   ),
                   const SizedBox(height: 40),
                   

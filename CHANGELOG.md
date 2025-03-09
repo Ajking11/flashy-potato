@@ -1,28 +1,18 @@
-# Changelog
-All notable changes to the Costa FSE Toolbox project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 ### Added
-- Document Repository feature with searchable technical documents
-- Category filtering for documents
-- PDF document viewer with paging support
-- Offline document access with download capability
-- Machine-specific document filtering
-- Implemented machine detail screens with comprehensive information
-- Added technical specifications tab for machine details
-- Created maintenance procedures tab with step-by-step instructions
-- Implemented troubleshooting guides with prioritized solutions
-- Added parts diagrams tab with interactive parts list
-- Created data models for machine details and related information
-- Implemented tab navigation within machine detail screen
-- Enhanced mock data for troubleshooting guides with real-world coffee machine issues
-- Added comprehensive mock parts diagrams for machine components
-- Integrated actual part numbers and descriptions for grinder assembly components
-- Added login screen that appears after splash screen, mimicking machine technician access with password protection
-- Implemented session management to require login each time the app starts
+- User preferences system with persistent storage
+- Dark/light theme toggle option
+- Favorite machines and filters functionality
+- Custom dashboard with updates and favorites
+- Document update notifications
+- Important information notices for engineers
+- Quick links to frequently used features
+- Settings screen for preferences management
+- Last update check tracking
+- Download count and management from dashboard
+
+### Security
+- Implemented secure password hashing with SHA-256 and salt for login system
 
 ### Fixed
 - Removed unused `_isRunningOnEmulator` and `_getDeviceBrand` methods in document_viewer_screen.dart
@@ -82,3 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed overflow issue in the filter capacity visualization on smaller screens
 - Eliminated wasted space in the UI to make better use of available screen real estate
 - Improved responsiveness for different screen sizes
+
+[Unreleased]: https://github.com/yourusername/costa_fse_toolbox/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/yourusername/costa_fse_toolbox/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/yourusername/costa_fse_toolbox/releases/tag/v1.0.0

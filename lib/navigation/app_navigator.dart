@@ -1,7 +1,9 @@
+// app_navigator.dart
 import 'package:flutter/material.dart';
 import '../screens/filter_json_screen.dart';
 import '../screens/machine_list_screen.dart';
 import '../screens/document_repository_screen.dart';
+import '../screens/dashboard_screen.dart';
 import '../constants.dart';
 
 class AppNavigator extends StatefulWidget {
@@ -16,8 +18,9 @@ class _AppNavigatorState extends State<AppNavigator> {
   
   // List of pages to display
   final List<Widget> _pages = [
-    const FilterJsonScreen(),      // Filter finder as main screen
-    const MachineListScreen(),     // Machine info screen
+    const DashboardScreen(),     // New dashboard as home screen
+    const FilterJsonScreen(),    // Filter finder screen
+    const MachineListScreen(),   // Machine info screen
     const DocumentRepositoryScreen(), // Documents screen
   ];
 
@@ -43,6 +46,10 @@ class _AppNavigatorState extends State<AppNavigator> {
             });
           },
           items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.water_drop),
               label: 'Filter Finder',
