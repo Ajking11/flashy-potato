@@ -1,0 +1,2 @@
+C:/Programming/Flutter/costa_filter_checker/android/app/.cxx/RelWithDebInfo/261k5075/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Programming/Flutter/costa_filter_checker/android/app/.cxx/RelWithDebInfo/261k5075/arm64-v8a/CMakeFiles/rebuild_cache.dir

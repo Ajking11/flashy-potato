@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:costa_fse_toolbox/providers/filter_provider.dart';
-import 'package:costa_fse_toolbox/services/filter_service.dart';
+import 'package:costa_toolbox/providers/filter_provider.dart';
+import 'package:costa_toolbox/services/filter_service.dart';
 import 'package:mockito/annotations.dart';
 
 // Generate mocks for future use

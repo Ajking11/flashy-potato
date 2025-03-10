@@ -1,4 +1,4 @@
-name: costa_fse_toolbox
+name: costa_toolbox
 description: "A comprehensive toolkit for Costa Coffee field service engineers."
 publish_to: 'none'
 version: 1.0.1+1
@@ -17,6 +17,7 @@ dependencies:
   path_provider: ^2.1.2
   shared_preferences: ^2.5.2
   crypto: ^3.0.6
+  change_app_package_name: ^1.5.0
 
 dev_dependencies:
   flutter_test:
@@ -39,10 +40,9 @@ flutter:
     - assets/sample.pdf
 
     # Documents
-    - assets/documents/
     - assets/documents/schaerer_scb_parts.pdf
-    - assets/documents/S10_Installation_Manual.pdf
-    - assets/documents/Soul_S10_Spare_Parts.pdf
+    - assets/documents/soul_s10_installation_manual.pdf
+    - assets/documents/soul_s10_spare_parts.pdf
     
     # Images
     - assets/images/c50.png
