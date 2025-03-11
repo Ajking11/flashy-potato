@@ -1,0 +1,2 @@
+C:/Programming/Flutter/costa_toolbox/android/app/.cxx/Debug/co212h27/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Programming/Flutter/costa_toolbox/android/app/.cxx/Debug/co212h27/arm64-v8a/CMakeFiles/rebuild_cache.dir
