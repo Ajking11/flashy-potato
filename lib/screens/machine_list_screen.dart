@@ -61,27 +61,32 @@ class _MachineListScreenState extends State<MachineListScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   children: [
-                    FadeAnimation(
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Text(
-                          'Select the machine to view its "Information & Configuration"',
-                          textAlign: TextAlign.center,
-                          style: CostaTextStyle.subtitle2.copyWith(
-                            fontWeight: FontWeight.w500,
+                    RepaintBoundary(
+                      child: FadeAnimation(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: const Text(
+                            'Select the machine to view its "Information & Configuration"',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'CostaTextO',
+                              color: deepRed,
+                            ),
                           ),
                         ),
                       ),
@@ -92,7 +97,7 @@ class _MachineListScreenState extends State<MachineListScreen> {
                         delay: const Duration(milliseconds: 200),
                         child: GridView.builder(
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.9,
                             crossAxisSpacing: 16,
@@ -116,76 +121,83 @@ class _MachineListScreenState extends State<MachineListScreen> {
     );
   }
 
-Widget _buildMachineCard(BuildContext context, Machine machine) {
-  return Consumer<PreferencesProvider>(
-    builder: (context, prefsProvider, child) {
-      return Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: EdgeInsets.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MachineDetailScreen(machine: machine),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Image.asset(
-                    machine.imagePath,
-                    fit: BoxFit.contain,
+  Widget _buildMachineCard(BuildContext context, Machine machine) {
+    return Consumer<PreferencesProvider>(
+      builder: (context, prefsProvider, child) {
+        // Use RepaintBoundary for the card which could rebuild when favorite status changes
+        return RepaintBoundary(
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: EdgeInsets.zero,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MachineDetailScreen(machine: machine),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            machine.manufacturer,
-                            style: CostaTextStyle.bodyText2.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            machine.model,
-                            style: CostaTextStyle.subtitle2,
-                          ),
-                        ],
+                      child: Center(
+                        child: Image.asset(
+                          machine.imagePath,
+                          fit: BoxFit.contain,
+                          // Use only cacheWidth to maintain aspect ratio
+                          cacheWidth: 300,
+                        ),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        prefsProvider.isMachineFavorite(machine.machineId)
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: prefsProvider.isMachineFavorite(machine.machineId)
-                            ? Colors.amber
-                            : Colors.grey,
-                      ),
-                      onPressed: () {
-                        prefsProvider.toggleFavoriteMachine(machine.machineId);
-                      },
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                machine.manufacturer,
+                                style: CostaTextStyle.bodyText2.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                machine.model,
+                                style: CostaTextStyle.subtitle2,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            prefsProvider.isMachineFavorite(machine.machineId)
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: prefsProvider.isMachineFavorite(machine.machineId)
+                                ? Colors.amber
+                                : Colors.grey,
+                          ),
+                          onPressed: () {
+                            prefsProvider.toggleFavoriteMachine(machine.machineId);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

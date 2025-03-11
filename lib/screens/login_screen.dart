@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         
                         // Password message
                         const Text(
-                          'A technician\'s key is present',
+                          'Technician\'s key is present',
                           style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'CostaTextO',

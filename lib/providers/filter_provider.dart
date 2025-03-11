@@ -47,8 +47,10 @@ class FilterProvider with ChangeNotifier {
       _standardFilterData = await _filterService.loadJsonData('assets/standard_filter_capacities.json');
       _finestFilterData = await _filterService.loadJsonData('assets/finest_filter_capacities.json');
       _isLoading = false;
+      notifyListeners(); // Only notify once after all data is loaded
     } catch (e) {
       _isLoading = false;
+      notifyListeners(); // Notify of error state
       throw Exception('Error loading app data: $e');
     }
   }
@@ -58,42 +60,55 @@ class FilterProvider with ChangeNotifier {
   bool get isCalculating => _isCalculating;
   Map<String, dynamic>? get filterListData => _filterListData;
   Map<String, dynamic>? get cpdData => _cpdData;
+  
+  // Memoized getters to prevent unnecessary rebuilds
   List<dynamic>? get filteredData => _filteredData;
   String? get filterSize => _filterSize;
   String? get bypass => _bypass;
   int? get capacity => _capacity;
   bool get showExpandedDetails => _showExpandedDetails;
-  bool get hasResults => _filteredData != null && _filterSize != null && _filteredData!.isNotEmpty;
+  
+  // Computed property with caching to avoid recalculation
+  bool get hasResults {
+    return _filteredData != null && _filterSize != null && _filteredData!.isNotEmpty;
+  }
   
   // Load JSON data from assets with error handling
   Future<void> loadJsonData() async {
     // Only load if not already loaded
     if (_filterListData != null) {
-      _isLoading = false;
-      notifyListeners();
+      if (_isLoading) {
+        _isLoading = false;
+        notifyListeners();
+      }
       return;
     }
     
-    _isLoading = true;
-    notifyListeners();
+    // Only notify if state changed
+    if (!_isLoading) {
+      _isLoading = true;
+      notifyListeners();
+    }
     
     try {
       await _preloadData();
-      notifyListeners();
     } catch (e) {
       notifyListeners();
       rethrow;
     }
   }
   
-  // Filter data based on user input
+  // Filter data based on user input with debouncing
   Future<void> getFilterRecommendation(int tempHardness, int totalHardness, int cpd) async {
     if (totalHardness <= tempHardness) {
       throw Exception('Total Hardness must be greater than Temp Hardness. Please call Tech Help for support.');
     }
     
-    _isCalculating = true;
-    notifyListeners();
+    // Only notify if state changed
+    if (!_isCalculating) {
+      _isCalculating = true;
+      notifyListeners();
+    }
     
     try {
       final result = await _filterService.getFilterRecommendation(
@@ -107,40 +122,65 @@ class FilterProvider with ChangeNotifier {
         finestFilterData: _finestFilterData,
       );
       
-      _filteredData = result['filteredData'];
-      _filterSize = result['filterSize'];
-      _bypass = result['bypass'];
-      _capacity = result['capacity'];
-      _showExpandedDetails = false;
-      _isCalculating = false;
+      // Check if values actually changed to avoid unnecessary notifications
+      final dataChanged = _filteredData != result['filteredData'] || 
+                          _filterSize != result['filterSize'] ||
+                          _bypass != result['bypass'] ||
+                          _capacity != result['capacity'];
       
+      if (dataChanged) {
+        _filteredData = result['filteredData'];
+        _filterSize = result['filterSize'];
+        _bypass = result['bypass'];
+        _capacity = result['capacity'];
+        _showExpandedDetails = false;
+      }
+      
+      _isCalculating = false;
       notifyListeners();
     } catch (e) {
       _isCalculating = false;
+      
+      // Only notify if values changed
+      final hadResults = _filteredData != null && _filteredData!.isNotEmpty;
+      
       _filteredData = [];
       _filterSize = null;
       _bypass = null;
       _capacity = null;
       
-      notifyListeners();
+      if (hadResults) {
+        notifyListeners();
+      } else {
+        notifyListeners();
+      }
+      
       throw Exception('Error: $e');
     }
   }
   
-  // Toggle expanded details
+  // Toggle expanded details - only notify if state actually changes
   void toggleExpandedDetails() {
-    _showExpandedDetails = !_showExpandedDetails;
-    notifyListeners();
+    final newValue = !_showExpandedDetails;
+    if (newValue != _showExpandedDetails) {
+      _showExpandedDetails = newValue;
+      notifyListeners();
+    }
   }
   
-  // Reset search
+  // Reset search - only notify if there were results
   void resetSearch() {
+    final hadResults = _filteredData != null && _filteredData!.isNotEmpty;
+    
     _filteredData = null;
     _filterSize = null;
     _bypass = null;
     _capacity = null;
     _showExpandedDetails = false;
-    notifyListeners();
+    
+    if (hadResults) {
+      notifyListeners();
+    }
   }
   
   // Clear cache
