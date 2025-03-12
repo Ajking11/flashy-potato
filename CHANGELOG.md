@@ -1,5 +1,15 @@
+# Changelog
+All notable changes to the Costa FSE Toolbox will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
 ### Added
+- Firebase integration for backend services
+- User authentication system with Firebase Auth
+- Cloud Firestore database for storing app data
+- Firebase Cloud Storage for document files
 - User preferences system with persistent storage
 - Dark/light theme toggle option
 - Favorite machines and filters functionality
