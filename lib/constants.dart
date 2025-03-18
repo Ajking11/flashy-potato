@@ -10,9 +10,6 @@ const Color latte = Color.fromARGB(255, 242, 226, 218);  // #F2E2DA
 // App version (accessible throughout the app)
 const String appVersion = "0.2.5";
 
-// Dark mode toggle - not implemented in this app
-const bool showDarkModeToggle = false;
-
 // TYPOGRAPHY SYSTEM
 // Based on Costa Coffee Brand Guidelines
 // Using full range of Costa fonts

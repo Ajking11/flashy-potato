@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:pdfx/pdfx.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/document.dart';
@@ -24,9 +24,12 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   String? _pdfPath;
   bool _isLoading = true;
   int _totalPages = 0;
-  int _currentPage = 0;
+  int _currentPage = 1; // pdfx uses 1-indexed pages
   bool _hasError = false;
   String _errorMessage = '';
+  
+  // PDF controller
+  PdfControllerPinch? _pdfController;
 
   // Returns the effective file path: uses the generated _pdfPath if available, otherwise falls back to widget.filePath.
   String get effectiveFilePath => _pdfPath ?? widget.filePath ?? '';
@@ -38,8 +41,21 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     if (widget.filePath == null) {
       _loadDocument();
     } else {
+      _initializePdfControllerWithPath(widget.filePath!);
       _isLoading = false;
     }
+  }
+
+  @override
+  void dispose() {
+    _pdfController?.dispose();
+    super.dispose();
+  }
+
+  void _initializePdfControllerWithPath(String path) {
+    _pdfController = PdfControllerPinch(
+      document: PdfDocument.openFile(path),
+    );
   }
 
   Future<void> _loadDocument() async {
@@ -68,6 +84,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       // Write data to the file
       await file.writeAsBytes(bytes.buffer.asUint8List());
       debugPrint('Successfully wrote PDF to: ${file.path}');
+
+      // Initialize the PDF controller
+      _initializePdfControllerWithPath(file.path);
 
       setState(() {
         _pdfPath = file.path;
@@ -146,47 +165,56 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
                 ),
               ),
             )
-          else if (effectiveFilePath.isNotEmpty)
-            PDFView(
-              filePath: effectiveFilePath,
-              enableSwipe: true,
-              swipeHorizontal: true,
-              autoSpacing: false,
-              pageFling: true,
-              pageSnap: true,
-              onRender: (pages) {
-                if (mounted) {
-                  setState(() {
-                    _totalPages = pages ?? 0;
-                  });
-                }
+          else if (_pdfController != null)
+            PdfViewPinch(
+              controller: _pdfController!,
+              onDocumentLoaded: (document) {
+                setState(() {
+                  _totalPages = document.pagesCount;
+                });
               },
-              onError: (error) {
-                debugPrint('PDF View Error: $error');
-                if (mounted) {
-                  setState(() {
-                    _hasError = true;
-                    _errorMessage = error.toString();
-                  });
-                }
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                });
               },
-              onPageError: (page, error) {
-                debugPrint('Error while loading page $page: $error');
-              },
-              onPageChanged: (page, total) {
-                if (mounted) {
-                  setState(() {
-                    _currentPage = page ?? 0;
-                  });
-                }
-              },
+              builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                options: const DefaultBuilderOptions(),
+                documentLoaderBuilder: (_) => const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+                  ),
+                ),
+                pageLoaderBuilder: (_) => const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+                  ),
+                ),
+                errorBuilder: (_, error) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: accentRed,
+                        size: 48.0,
+                      ),
+                      const SizedBox(height: 16.0),
+                      Text(
+                        'Error loading PDF: ${error.toString()}',
+                        style: CostaTextStyle.bodyText1,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             )
           else
             const Center(child: Text('PDF file path is null')),
-          if (!_isLoading &&
-              !_hasError &&
-              _totalPages > 0 &&
-              effectiveFilePath.isNotEmpty)
+
+          // Page indicator
+          if (!_isLoading && !_hasError && _totalPages > 0 && _pdfController != null)
             Positioned(
               bottom: 16,
               left: 0,
@@ -202,7 +230,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Page ${_currentPage + 1} of $_totalPages',
+                    'Page $_currentPage of $_totalPages',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

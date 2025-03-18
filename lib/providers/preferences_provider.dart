@@ -1,4 +1,4 @@
-// file_preferences_service.dart
+// preferences_provider.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -12,7 +12,7 @@ class PreferencesProvider with ChangeNotifier {
   // Getters
   UserPreferences get preferences => _preferences;
   bool get isLoading => _isLoading;
-  bool get isDarkMode => _preferences.isDarkMode;
+  // Removed isDarkMode getter
 
   // Initialize provider with stored preferences
   static Future<PreferencesProvider> initialize() async {
@@ -58,12 +58,7 @@ class PreferencesProvider with ChangeNotifier {
     }
   }
 
-  // Toggle dark mode
-  Future<void> toggleDarkMode() async {
-    _preferences = _preferences.copyWith(isDarkMode: !_preferences.isDarkMode);
-    await _savePreferences();
-    notifyListeners();
-  }
+  // Removed toggleDarkMode method
 
   // Toggle favorite machine
   Future<void> toggleFavoriteMachine(String machineId) async {

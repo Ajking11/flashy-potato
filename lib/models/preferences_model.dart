@@ -1,7 +1,4 @@
 class UserPreferences {
-  // Theme preference
-  final bool isDarkMode;
-  
   // Favorite machines (store machineId list)
   final List<String> favoriteMachineIds;
   
@@ -18,7 +15,6 @@ class UserPreferences {
   // Use a factory constructor for the default value
   factory UserPreferences.defaultPrefs() {
     return UserPreferences(
-      isDarkMode: false,
       favoriteMachineIds: const [],
       favoriteFilterTypes: const [],
       notifyDocumentUpdates: true,
@@ -29,7 +25,6 @@ class UserPreferences {
 
   // Regular constructor without default values for the DateTime
   const UserPreferences({
-    this.isDarkMode = false,
     this.favoriteMachineIds = const [],
     this.favoriteFilterTypes = const [],
     this.notifyDocumentUpdates = true,
@@ -39,7 +34,6 @@ class UserPreferences {
 
   // Create copy with updated fields
   UserPreferences copyWith({
-    bool? isDarkMode,
     List<String>? favoriteMachineIds,
     List<String>? favoriteFilterTypes,
     bool? notifyDocumentUpdates,
@@ -47,7 +41,6 @@ class UserPreferences {
     DateTime? lastUpdateCheck,
   }) {
     return UserPreferences(
-      isDarkMode: isDarkMode ?? this.isDarkMode,
       favoriteMachineIds: favoriteMachineIds ?? this.favoriteMachineIds,
       favoriteFilterTypes: favoriteFilterTypes ?? this.favoriteFilterTypes,
       notifyDocumentUpdates: notifyDocumentUpdates ?? this.notifyDocumentUpdates,
@@ -59,7 +52,6 @@ class UserPreferences {
   // Convert to/from JSON for storage
   Map<String, dynamic> toJson() {
     return {
-      'isDarkMode': isDarkMode,
       'favoriteMachineIds': favoriteMachineIds,
       'favoriteFilterTypes': favoriteFilterTypes,
       'notifyDocumentUpdates': notifyDocumentUpdates,
@@ -70,7 +62,6 @@ class UserPreferences {
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
     return UserPreferences(
-      isDarkMode: json['isDarkMode'] ?? false,
       favoriteMachineIds: List<String>.from(json['favoriteMachineIds'] ?? []),
       favoriteFilterTypes: List<String>.from(json['favoriteFilterTypes'] ?? []),
       notifyDocumentUpdates: json['notifyDocumentUpdates'] ?? true,

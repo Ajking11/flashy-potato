@@ -32,32 +32,7 @@ class PreferencesScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Theme section (conditionally displayed)
-                if (showDarkModeToggle) ...[
-                  _buildSectionHeader(context, 'Appearance'),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    child: Column(
-                      children: [
-                        SwitchListTile(
-                          title: const Text('Dark Mode'),
-                          subtitle:
-                              const Text('Use dark theme throughout the app'),
-                          value: prefsProvider.isDarkMode,
-                          onChanged: (value) {
-                            prefsProvider.toggleDarkMode();
-                          },
-                          secondary: Icon(
-                            prefsProvider.isDarkMode
-                                ? Icons.dark_mode
-                                : Icons.light_mode,
-                            color: costaRed,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                // Removed Dark Mode section completely
 
                 // Notification section
                 _buildSectionHeader(context, 'Notifications'),

@@ -47,9 +47,7 @@ class MyApp extends StatelessWidget {
                 return MaterialApp(
                   title: 'Costa Coffee FSE Toolbox',
                   theme: ThemeService.getLightTheme(),
-                  darkTheme: ThemeService.getDarkTheme(),
-                  themeMode: prefsProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-                  debugShowCheckedModeBanner: false,
+                  debugShowCheckedModeBanner: true,
                   home: const SplashScreen(),
                 );
               },
