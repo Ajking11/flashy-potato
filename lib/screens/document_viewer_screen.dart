@@ -1,9 +1,11 @@
+// lib/screens/document_viewer_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/document.dart';
 import '../constants.dart';
 
@@ -66,31 +68,57 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     });
 
     try {
-      // Use the filePath provided by the document model (e.g., from your JSON)
-      final String assetPath = widget.document.filePath;
-      debugPrint('Loading PDF from: $assetPath');
-      final ByteData bytes = await rootBundle.load(assetPath);
-      final dir = await getTemporaryDirectory();
-
-      // Ensure the directory exists
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
+      // First check if the document is already downloaded
+      final dir = await getApplicationDocumentsDirectory();
+      final localPath = '${dir.path}/${widget.document.id}.pdf';
+      final localFile = File(localPath);
+      
+      if (await localFile.exists()) {
+        // Use the local file if it exists
+        _initializePdfControllerWithPath(localPath);
+        
+        setState(() {
+          _pdfPath = localPath;
+          _isLoading = false;
+        });
+        return;
       }
-
-      // Create a unique file name using the document id
-      final String fileName = '${widget.document.id}.pdf';
-      final String filePath = '${dir.path}${Platform.pathSeparator}$fileName';
-      final file = File(filePath);
-
-      // Write data to the file
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-      debugPrint('Successfully wrote PDF to: ${file.path}');
-
-      // Initialize the PDF controller
-      _initializePdfControllerWithPath(file.path);
-
+      
+      // If not locally available, try to download from Firebase Storage
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('documents/${widget.document.id}.pdf');
+            
+        // Download to a temporary file
+        await storageRef.writeToFile(localFile);
+        
+        // Initialize with the downloaded file
+        _initializePdfControllerWithPath(localFile.path);
+        
+        setState(() {
+          _pdfPath = localFile.path;
+          _isLoading = false;
+        });
+        return;
+      } catch (storageError) {
+        debugPrint('Error downloading from Firebase: $storageError');
+        // Fall back to asset loading if Firebase fails
+      }
+      
+      // Fallback to loading from assets
+      final String assetPath = widget.document.filePath;
+      debugPrint('Loading PDF from asset: $assetPath');
+      final ByteData bytes = await rootBundle.load(assetPath);
+      
+      // Create a temporary file from the asset
+      final tempFile = File(localPath);
+      await tempFile.writeAsBytes(bytes.buffer.asUint8List());
+      
+      _initializePdfControllerWithPath(tempFile.path);
+      
       setState(() {
-        _pdfPath = file.path;
+        _pdfPath = tempFile.path;
         _isLoading = false;
       });
     } catch (e) {
@@ -105,6 +133,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     }
   }
 
+  // Rest of the class remains the same...
+  
   // Handle tap on the PDF
   void _handleTap(TapDownDetails details) async {
     // Show visual feedback for tap

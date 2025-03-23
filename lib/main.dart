@@ -1,6 +1,9 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/filter_provider.dart';
 import 'providers/document_provider.dart';
 import 'providers/preferences_provider.dart';
@@ -8,8 +11,16 @@ import 'constants.dart';
 import 'screens/login_screen.dart';
 import 'services/session_manager.dart';
 import 'services/theme_service.dart';
+import 'navigation/app_navigator.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const MyApp());
 }
 
@@ -71,7 +82,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// SplashScreen now navigates to LoginScreen instead of AppNavigator
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -87,22 +97,34 @@ class _SplashScreenState extends State<SplashScreen> {
     // Clear any existing session
     SessionManager.clearSession();
     
-    // Set a timer to navigate to the login page after a delay
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {  // Check if widget is still mounted before using context
+    // Check if already logged in first
+    _checkLoginState();
+  }
+  
+  void _checkLoginState() async {
+    // Set a timer to ensure minimum splash screen display time
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (mounted) {
+      // Navigate to the appropriate screen based on auth state
+      if (SessionManager.isLoggedIn()) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AppNavigator()),
+        );
+      } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Splash screen UI remains the same
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          // Use a gradient from deep red to lighter red
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

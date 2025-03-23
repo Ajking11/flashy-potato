@@ -1,7 +1,5 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
 import '../navigation/app_navigator.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
@@ -19,9 +17,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isLoading = false;
   bool _isUnlocked = false;
 
-  // Store the SHA-256 hash of "costa_coffee_techy"
-  final String _hashedPassword = "58f92f9e3bbdd06d88a85ec7a09b8e88a17e1f63b0d42917f8006119c0259d6a";
-
   @override
   void initState() {
     super.initState();
@@ -33,20 +28,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  String _hashPassword(String password) {
-    // Add a salt prefix to the password
-    final saltedPassword = "costa_coffee_$password";
-    
-    // Convert the salted password to bytes
-    final bytes = utf8.encode(saltedPassword);
-    
-    // Generate the SHA-256 hash
-    final digest = sha256.convert(bytes);
-    
-    // Return the hash as a hexadecimal string
-    return digest.toString();
-  }
-
   void _validatePassword() {
     setState(() {
       _isLoading = true;
@@ -56,12 +37,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       
-      // Hash the user input and compare with stored hash
-      final inputHash = _hashPassword(_passwordController.text);
-      
-      if (inputHash == _hashedPassword) {
-        // Set logged in status
-        SessionManager.setLoggedIn();
+      // Simple password check - use "techy" as the password
+      if (_passwordController.text == "techy") {
+        // Set logged in status using the original method
+        SessionManager.setLoggedIn(_passwordController.text);
         
         // Update state to show authenticated
         setState(() {
@@ -92,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          // Use the same gradient as SplashScreen for consistency
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -146,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center, // Changed to center alignment
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Title text
                         const Text(
@@ -157,11 +135,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'CostaDisplayO',
                             color: deepRed,
                           ),
-                          textAlign: TextAlign.center, // Ensure title is centered
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
                         
-                        // Password message - now centered
+                        // Password message
                         const Text(
                           'Technician\'s key is present',
                           style: TextStyle(
@@ -204,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                           onSubmitted: _isUnlocked ? null : (_) => _validatePassword(),
-                          textAlign: TextAlign.center, // Center the password text input
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
                         
