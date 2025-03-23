@@ -464,6 +464,10 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
         return Colors.teal;
       case DocumentCategory.technical:
         return costaRed;
+      case DocumentCategory.bulletin:
+        return Colors.amber;
+      case DocumentCategory.install:
+        return Colors.indigo;
       default:
         return Colors.grey;
     }
@@ -484,6 +488,10 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
         return Icons.school;
       case DocumentCategory.technical:
         return Icons.description;
+      case DocumentCategory.bulletin:
+        return Icons.announcement;
+      case DocumentCategory.install:
+        return Icons.install_desktop;
       default:
         return Icons.insert_drive_file;
     }

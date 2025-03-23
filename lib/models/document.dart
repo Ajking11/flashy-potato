@@ -91,8 +91,10 @@ class DocumentCategory {
   static const String parts = 'Parts Catalog';
   static const String training = 'Training';
   static const String technical = 'Technical Bulletin';
+  static const String bulletin = 'Bulletin';  // New category
+  static const String install = 'Install';    // New category
 
   static List<String> getAllCategories() {
-    return [manual, maintenance, troubleshooting, parts, training, technical];
+    return [manual, maintenance, troubleshooting, parts, training, technical, bulletin, install];
   }
 }
