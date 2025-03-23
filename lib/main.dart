@@ -94,24 +94,24 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     
-    // Clear any existing session
-    SessionManager.clearSession();
-    
-    // Check if already logged in first
-    _checkLoginState();
+    // Don't automatically clear the session - check if it's valid
+    _checkAuthState();
   }
   
-  void _checkLoginState() async {
+  void _checkAuthState() async {
     // Set a timer to ensure minimum splash screen display time
     await Future.delayed(const Duration(seconds: 2));
     
     if (mounted) {
       // Navigate to the appropriate screen based on auth state
       if (SessionManager.isLoggedIn()) {
+        // If the user is already logged in, proceed to the app
+        debugPrint('User is logged in: ${SessionManager.getCurrentUserEmail()}');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AppNavigator()),
         );
       } else {
+        // If not logged in, go to login screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );

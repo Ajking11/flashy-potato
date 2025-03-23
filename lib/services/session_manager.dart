@@ -12,13 +12,23 @@ class SessionManager {
     }
   }
   
-  // Set logged in status using password
-  static Future<UserCredential> setLoggedIn(String password) async {
-    return await _authService.signInAnonymously(password);
+  // Set logged in status using email and password
+  static Future<UserCredential> loginWithEmailAndPassword(String email, String password) async {
+    return await _authService.signInWithEmailAndPassword(email, password);
   }
   
   // Check if logged in
   static bool isLoggedIn() {
     return _authService.isAuthenticated();
+  }
+  
+  // Get current user email
+  static String? getCurrentUserEmail() {
+    return _authService.getCurrentUserEmail();
+  }
+  
+  // Request password reset
+  static Future<void> requestPasswordReset(String email) async {
+    await _authService.sendPasswordResetEmail(email);
   }
 }
