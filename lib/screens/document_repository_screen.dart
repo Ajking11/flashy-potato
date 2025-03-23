@@ -153,39 +153,45 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Filter chips row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    // Machine filter dropdown
-                    if (widget.initialMachineId == null) // Only show if not pre-filtered
-                      _buildFilterDropdown(
-                        label: selectedMachineId == null 
-                          ? 'All Machines' 
-                          : _getMachineName(selectedMachineId),
-                        icon: Icons.devices,
-                        onTap: () => _showMachineFilterSheet(context, documentProvider),
-                        isActive: selectedMachineId != null,
-                      ),
-                    
-                    const SizedBox(width: 1),
-                    
-                    // Category filter dropdown
-                    _buildFilterDropdown(
-                      label: selectedCategory ?? 'All Categories',
-                      icon: Icons.category,
-                      onTap: () => _showCategoryFilterSheet(context, documentProvider),
-                      isActive: selectedCategory != null,
+              // Filter buttons row - connected with square inner edges
+              Row(
+                children: [
+                  // Connected filter buttons taking full width
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // Machine filter dropdown - only show if not pre-filtered
+                        if (widget.initialMachineId == null)
+                          Expanded(
+                            flex: 1,
+                            child: _buildFilterDropdown(
+                              label: 'Machines',  // Shortened label
+                              value: selectedMachineId == null 
+                                ? 'All' 
+                                : _getShortMachineName(selectedMachineId),
+                              icon: Icons.devices,
+                              onTap: () => _showMachineFilterSheet(context, documentProvider),
+                              isActive: selectedMachineId != null,
+                              isLeftButton: true,
+                            ),
+                          ),
+                        
+                        // Category filter dropdown
+                        Expanded(
+                          flex: 1,
+                          child: _buildFilterDropdown(
+                            label: 'Categories',  // Shortened label
+                            value: selectedCategory ?? 'All',
+                            icon: Icons.category,
+                            onTap: () => _showCategoryFilterSheet(context, documentProvider),
+                            isActive: selectedCategory != null,
+                            isRightButton: true,
+                          ),
+                        ),
+                      ],
                     ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Clear filters button (only show if filters are applied)
-                    if (hasFilters)
-                      _buildClearFiltersButton(documentProvider),
-                  ],
-                ),
+                  ),
+                ],
               ),
               
               // Active filters display
@@ -217,23 +223,45 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     );
   }
 
-  // Helper method to build a styled filter dropdown button
+  // Helper method to build a styled filter dropdown button with label and value
   Widget _buildFilterDropdown({
     required String label,
+    required String value,
     required IconData icon,
     required VoidCallback onTap,
     required bool isActive,
+    bool isLeftButton = false,
+    bool isRightButton = false,
   }) {
+    // Create a BorderRadius that is square on one side
+    BorderRadius borderRadius;
+    if (isLeftButton) {
+      // Left button - rounded on left, square on right
+      borderRadius = const BorderRadius.horizontal(
+        left: Radius.circular(25),
+        right: Radius.zero,
+      );
+    } else if (isRightButton) {
+      // Right button - square on left, rounded on right
+      borderRadius = const BorderRadius.horizontal(
+        left: Radius.zero,
+        right: Radius.circular(25),
+      );
+    } else {
+      // Default - fully rounded
+      borderRadius = BorderRadius.circular(25);
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: borderRadius,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: isActive ? costaRed.withValues(alpha: 0.1) : Colors.white,
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: borderRadius,
             border: Border.all(
               color: isActive ? costaRed : Colors.grey.shade300,
               width: isActive ? 1.5 : 1,
@@ -244,22 +272,39 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
             children: [
               Icon(
                 icon,
-                size: 18,
+                size: 16,
                 color: isActive ? costaRed : Colors.grey.shade700,
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? costaRed : Colors.grey.shade800,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                ),
-              ),
               const SizedBox(width: 4),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Label at top (smaller)
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 10,
+                    ),
+                  ),
+                  // Value below (more prominent)
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: isActive ? costaRed : Colors.grey.shade800,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              const Spacer(),
               Icon(
                 Icons.arrow_drop_down,
                 color: isActive ? costaRed : Colors.grey.shade700,
+                size: 16,
               ),
             ],
           ),
@@ -296,43 +341,6 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     );
   }
 
-  // Helper method to build the clear filters button
-  Widget _buildClearFiltersButton(DocumentProvider documentProvider) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => documentProvider.clearFilters(),
-        borderRadius: BorderRadius.circular(25),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.clear,
-                size: 16,
-                color: Colors.grey.shade700,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Clear Filters',
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // Show bottom sheet for machine filter selection
   void _showMachineFilterSheet(
     BuildContext context,
@@ -345,82 +353,113 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      isScrollControlled: true, // Makes the sheet taller
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Sheet header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7, // 70% of screen height
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sheet handle for better UX
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.devices, color: costaRed),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Select Machine',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: deepRed,
+                
+                // Sheet header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.devices, color: costaRed),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Select Machine',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: deepRed,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                      const Spacer(),
+                      // Reset button if a filter is selected
+                      if (documentProvider.selectedMachineId != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            documentProvider.filterByMachine(null);
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.restart_alt, size: 16),
+                          label: const Text('Reset'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: costaRed,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              // All machines option
-              ListTile(
-                leading: const Icon(
-                  Icons.device_hub,
-                  color: costaRed,
-                ),
-                title: const Text('All Machines'),
-                selected: documentProvider.selectedMachineId == null,
-                selectedTileColor: costaRed.withValues(alpha: 0.1),
-                selectedColor: costaRed,
-                onTap: () {
-                  documentProvider.filterByMachine(null);
-                  Navigator.pop(context);
-                },
-              ),
-              
-              // Machine list
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: machines.length,
-                  itemBuilder: (context, index) {
-                    final machine = machines[index];
-                    final isSelected = documentProvider.selectedMachineId == machine.machineId;
-                    
-                    return ListTile(
-                      leading: isSelected
-                        ? const Icon(Icons.check_circle, color: costaRed)
-                        : const Icon(Icons.coffee, color: Colors.brown),
-                      title: Text('${machine.manufacturer} ${machine.model}'),
-                      selected: isSelected,
-                      selectedTileColor: costaRed.withValues(alpha: 0.1),
-                      selectedColor: costaRed,
-                      onTap: () {
-                        documentProvider.filterByMachine(machine.machineId);
-                        Navigator.pop(context);
-                      },
-                    );
+                
+                // All machines option
+                ListTile(
+                  leading: const Icon(
+                    Icons.device_hub,
+                    color: costaRed,
+                  ),
+                  title: const Text('All Machines'),
+                  selected: documentProvider.selectedMachineId == null,
+                  selectedTileColor: costaRed.withValues(alpha: 0.1),
+                  selectedColor: costaRed,
+                  onTap: () {
+                    documentProvider.filterByMachine(null);
+                    Navigator.pop(context);
                   },
                 ),
-              ),
-            ],
+                
+                // Machine list
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: machines.length,
+                    itemBuilder: (context, index) {
+                      final machine = machines[index];
+                      final isSelected = documentProvider.selectedMachineId == machine.machineId;
+                      
+                      return ListTile(
+                        leading: isSelected
+                          ? const Icon(Icons.check_circle, color: costaRed)
+                          : const Icon(Icons.coffee, color: Colors.brown),
+                        title: Text('${machine.manufacturer} ${machine.model}'),
+                        selected: isSelected,
+                        selectedTileColor: costaRed.withValues(alpha: 0.1),
+                        selectedColor: costaRed,
+                        onTap: () {
+                          documentProvider.filterByMachine(machine.machineId);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -439,83 +478,114 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      isScrollControlled: true, // Makes the sheet taller
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Sheet header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7, // 70% of screen height
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sheet handle for better UX
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.category, color: costaRed),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Select Category',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: deepRed,
-                      ),
+                
+                // Sheet header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // All categories option
-              ListTile(
-                leading: const Icon(
-                  Icons.category,
-                  color: costaRed,
-                ),
-                title: const Text('All Categories'),
-                selected: documentProvider.selectedCategory == null,
-                selectedTileColor: costaRed.withValues(alpha: 0.1),
-                selectedColor: costaRed,
-                onTap: () {
-                  documentProvider.filterByCategory(null);
-                  Navigator.pop(context);
-                },
-              ),
-              
-              // Category list
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    final isSelected = documentProvider.selectedCategory == category;
-                    
-                    return ListTile(
-                      leading: Icon(
-                        _getCategoryIcon(category),
-                        color: isSelected ? costaRed : _getCategoryColor(category),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.category, color: costaRed),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Select Category',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: deepRed,
+                        ),
                       ),
-                      title: Text(category),
-                      selected: isSelected,
-                      selectedTileColor: costaRed.withValues(alpha: 0.1),
-                      selectedColor: costaRed,
-                      onTap: () {
-                        documentProvider.filterByCategory(category);
-                        Navigator.pop(context);
-                      },
-                    );
+                      const Spacer(),
+                      // Reset button if a filter is selected
+                      if (documentProvider.selectedCategory != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            documentProvider.filterByCategory(null);
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.restart_alt, size: 16),
+                          label: const Text('Reset'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: costaRed,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // All categories option
+                ListTile(
+                  leading: const Icon(
+                    Icons.category,
+                    color: costaRed,
+                  ),
+                  title: const Text('All Categories'),
+                  selected: documentProvider.selectedCategory == null,
+                  selectedTileColor: costaRed.withValues(alpha: 0.1),
+                  selectedColor: costaRed,
+                  onTap: () {
+                    documentProvider.filterByCategory(null);
+                    Navigator.pop(context);
                   },
                 ),
-              ),
-            ],
+                
+                // Category list
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      final isSelected = documentProvider.selectedCategory == category;
+                      
+                      return ListTile(
+                        leading: Icon(
+                          _getCategoryIcon(category),
+                          color: isSelected ? costaRed : _getCategoryColor(category),
+                        ),
+                        title: Text(category),
+                        selected: isSelected,
+                        selectedTileColor: costaRed.withValues(alpha: 0.1),
+                        selectedColor: costaRed,
+                        onTap: () {
+                          documentProvider.filterByCategory(category);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -739,7 +809,22 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     );
     
     return '${machine.manufacturer} ${machine.model}';
-    // return '${machine.model}';
+  }
+
+  // Get a shorter version of machine name
+  String _getShortMachineName(String machineId) {
+    final machines = getMachines();
+    final machine = machines.firstWhere(
+      (m) => m.machineId == machineId,
+      orElse: () => Machine(
+        manufacturer: 'Unknown',
+        model: 'Machine',
+        imagePath: '',
+      ),
+    );
+    
+    // Just return the model to save space
+    return machine.model;
   }
 
   // Helper method to format date

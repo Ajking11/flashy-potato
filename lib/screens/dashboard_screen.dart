@@ -151,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildQuickActionsGrid(BuildContext context) {
     final List<Map<String, dynamic>> actions = [
       {
-        'title': 'Filter\nFinder',
+        'title': '\nFilters',
         'icon': Icons.water_drop,
         'color': Colors.blue,
         'onTap': () {
@@ -215,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: actions.map((action) {
           return Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(

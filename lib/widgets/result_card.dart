@@ -272,8 +272,8 @@ class ResultCard extends StatelessWidget {
                           ),
                           label: Text(
                             showExpandedDetails
-                                ? 'Show Less Details'
-                                : 'Show More Details',
+                                ? 'Less Details'
+                                : 'More Details',
                             style: const TextStyle(color: Colors.white),
                           ),
                           style: ElevatedButton.styleFrom(

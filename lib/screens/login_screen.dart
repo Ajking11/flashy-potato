@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center, // Changed to center alignment
                       children: [
                         // Title text
                         const Text(
@@ -157,10 +157,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'CostaDisplayO',
                             color: deepRed,
                           ),
+                          textAlign: TextAlign.center, // Ensure title is centered
                         ),
                         const SizedBox(height: 24),
                         
-                        // Password message
+                        // Password message - now centered
                         const Text(
                           'Technician\'s key is present',
                           style: TextStyle(
@@ -168,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'CostaTextO',
                             color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const Text(
                           'Please enter the password:',
@@ -176,6 +178,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'CostaTextO',
                             color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
                         
@@ -201,6 +204,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                           onSubmitted: _isUnlocked ? null : (_) => _validatePassword(),
+                          textAlign: TextAlign.center, // Center the password text input
                         ),
                         const SizedBox(height: 24),
                         
