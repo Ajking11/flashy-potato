@@ -3,8 +3,37 @@ import 'package:provider/provider.dart';
 import '../providers/preferences_provider.dart';
 import '../constants.dart';
 
-class PreferencesScreen extends StatelessWidget {
+class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
+
+  @override
+  State<PreferencesScreen> createState() => _PreferencesScreenState();
+}
+
+class _PreferencesScreenState extends State<PreferencesScreen> {
+  // Create controller as class member to maintain focus between rebuilds
+  final TextEditingController _emailController = TextEditingController();
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize/update controller with current email value
+    final userEmail = Provider.of<PreferencesProvider>(context, listen: false)
+        .preferences.userEmail;
+    
+    // Only set value if different, to avoid cursor position issues
+    if (_emailController.text != (userEmail ?? '')) {
+      _emailController.text = userEmail ?? '';
+    }
+  }
+  
+  @override
+  void dispose() {
+    // Cleanup controller when the widget is removed
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +61,113 @@ class PreferencesScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Removed Dark Mode section completely
+                // User Information section
+                _buildSectionHeader(context, 'User Information'),
+                Card(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.email_outlined,
+                              color: costaRed,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Email Address',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const Spacer(),
+                            // Show a verified badge if email is confirmed
+                            if (prefsProvider.preferences.isEmailConfirmed)
+                              const Tooltip(
+                                message: 'Email confirmed',
+                                child: Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                  size: 20,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your email address',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            // Add a suffix icon based on confirmation status
+                            suffixIcon: prefsProvider.preferences.isEmailConfirmed
+                                ? const Icon(Icons.check_circle, color: Colors.green)
+                                : IconButton(
+                                    icon: const Icon(Icons.check),
+                                    tooltip: 'Confirm email',
+                                    onPressed: _emailController.text.isEmpty
+                                        ? null // Disable if empty
+                                        : () {
+                                            prefsProvider.confirmUserEmail();
+                                            // Show success message
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Email confirmed'),
+                                                backgroundColor: Colors.green,
+                                                duration: Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                  ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          // Disable text field when email is confirmed
+                          enabled: !prefsProvider.preferences.isEmailConfirmed,
+                          onChanged: (value) {
+                            // Only update if not confirmed
+                            if (!prefsProvider.preferences.isEmailConfirmed) {
+                              prefsProvider.updateUserEmail(
+                                  value.isEmpty ? null : value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: const Text(
+                                'Your email is used for account recovery and important notifications',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                            // Show Edit button if email is confirmed
+                            if (prefsProvider.preferences.isEmailConfirmed)
+                              TextButton(
+                                onPressed: () {
+                                  prefsProvider.resetEmailConfirmation();
+                                },
+                                child: const Text('Edit'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
                 // Notification section
                 _buildSectionHeader(context, 'Notifications'),

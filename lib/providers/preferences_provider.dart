@@ -12,7 +12,6 @@ class PreferencesProvider with ChangeNotifier {
   // Getters
   UserPreferences get preferences => _preferences;
   bool get isLoading => _isLoading;
-  // Removed isDarkMode getter
 
   // Initialize provider with stored preferences
   static Future<PreferencesProvider> initialize() async {
@@ -58,8 +57,6 @@ class PreferencesProvider with ChangeNotifier {
     }
   }
 
-  // Removed toggleDarkMode method
-
   // Toggle favorite machine
   Future<void> toggleFavoriteMachine(String machineId) async {
     final List<String> updatedFavorites = List.from(_preferences.favoriteMachineIds);
@@ -99,6 +96,35 @@ class PreferencesProvider with ChangeNotifier {
       notifyDocumentUpdates: notifyDocumentUpdates,
       notifyImportantInfo: notifyImportantInfo,
     );
+    await _savePreferences();
+    notifyListeners();
+  }
+  
+  // Update user email
+  Future<void> updateUserEmail(String? email) async {
+    // If email is being changed, reset confirmation status
+    final bool resetConfirmation = email != _preferences.userEmail;
+    
+    _preferences = _preferences.copyWith(
+      userEmail: email,
+      isEmailConfirmed: resetConfirmation ? false : _preferences.isEmailConfirmed,
+    );
+    await _savePreferences();
+    notifyListeners();
+  }
+  
+  // Confirm the current email address
+  Future<void> confirmUserEmail() async {
+    if (_preferences.userEmail != null && _preferences.userEmail!.isNotEmpty) {
+      _preferences = _preferences.copyWith(isEmailConfirmed: true);
+      await _savePreferences();
+      notifyListeners();
+    }
+  }
+  
+  // Reset email confirmation to allow editing
+  Future<void> resetEmailConfirmation() async {
+    _preferences = _preferences.copyWith(isEmailConfirmed: false);
     await _savePreferences();
     notifyListeners();
   }

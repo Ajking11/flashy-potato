@@ -9,6 +9,10 @@ class UserPreferences {
   final bool notifyDocumentUpdates;
   final bool notifyImportantInfo;
   
+  // User information
+  final String? userEmail;
+  final bool isEmailConfirmed; // New field to track email confirmation
+  
   // Last update check timestamp
   final DateTime lastUpdateCheck;
 
@@ -19,6 +23,8 @@ class UserPreferences {
       favoriteFilterTypes: const [],
       notifyDocumentUpdates: true,
       notifyImportantInfo: true,
+      userEmail: null,
+      isEmailConfirmed: false,
       lastUpdateCheck: DateTime(2025, 3, 1),
     );
   }
@@ -29,6 +35,8 @@ class UserPreferences {
     this.favoriteFilterTypes = const [],
     this.notifyDocumentUpdates = true,
     this.notifyImportantInfo = true,
+    this.userEmail,
+    this.isEmailConfirmed = false,
     required this.lastUpdateCheck,
   });
 
@@ -38,6 +46,8 @@ class UserPreferences {
     List<String>? favoriteFilterTypes,
     bool? notifyDocumentUpdates,
     bool? notifyImportantInfo,
+    String? userEmail,
+    bool? isEmailConfirmed,
     DateTime? lastUpdateCheck,
   }) {
     return UserPreferences(
@@ -45,6 +55,8 @@ class UserPreferences {
       favoriteFilterTypes: favoriteFilterTypes ?? this.favoriteFilterTypes,
       notifyDocumentUpdates: notifyDocumentUpdates ?? this.notifyDocumentUpdates,
       notifyImportantInfo: notifyImportantInfo ?? this.notifyImportantInfo,
+      userEmail: userEmail ?? this.userEmail,
+      isEmailConfirmed: isEmailConfirmed ?? this.isEmailConfirmed,
       lastUpdateCheck: lastUpdateCheck ?? this.lastUpdateCheck,
     );
   }
@@ -56,6 +68,8 @@ class UserPreferences {
       'favoriteFilterTypes': favoriteFilterTypes,
       'notifyDocumentUpdates': notifyDocumentUpdates,
       'notifyImportantInfo': notifyImportantInfo,
+      'userEmail': userEmail,
+      'isEmailConfirmed': isEmailConfirmed,
       'lastUpdateCheck': lastUpdateCheck.toIso8601String(),
     };
   }
@@ -66,6 +80,8 @@ class UserPreferences {
       favoriteFilterTypes: List<String>.from(json['favoriteFilterTypes'] ?? []),
       notifyDocumentUpdates: json['notifyDocumentUpdates'] ?? true,
       notifyImportantInfo: json['notifyImportantInfo'] ?? true,
+      userEmail: json['userEmail'],
+      isEmailConfirmed: json['isEmailConfirmed'] ?? false,
       lastUpdateCheck: json['lastUpdateCheck'] != null 
           ? DateTime.parse(json['lastUpdateCheck']) 
           : DateTime(2025, 3, 1),
