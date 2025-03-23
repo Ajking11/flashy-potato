@@ -194,13 +194,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       },
       {
-        'title': '\nTechnical',
-        'icon': Icons.build_outlined,
+        'title': '\nSoftware',  // Changed from 'Technical' to 'Software'
+        'icon': Icons.usb_outlined,
         'color': Colors.green,
         'onTap': () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Maintenance feature coming soon'),
+              content: Text('Software feature coming soon'),
               duration: Duration(seconds: 2),
             ),
           );
@@ -208,59 +208,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     ];
 
+    // Changed from ListView.builder to Row with Expanded
     return SizedBox(
       height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: actions.length,
-        itemBuilder: (context, index) {
-          final action = actions[index];
-          return Container(
-            width: 85,
-            margin: const EdgeInsets.only(right: 10),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: InkWell(
-                onTap: action['onTap'],
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: action['color'].withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+      child: Row(
+        children: actions.map((action) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: InkWell(
+                  onTap: action['onTap'],
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: action['color'].withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            action['icon'],
+                            color: action['color'],
+                            size: 20,
+                          ),
                         ),
-                        child: Icon(
-                          action['icon'],
-                          color: action['color'],
-                          size: 20,
+                        const SizedBox(height: 4),
+                        Text(
+                          action['title'],
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.visible,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        action['title'],
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.visible,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }

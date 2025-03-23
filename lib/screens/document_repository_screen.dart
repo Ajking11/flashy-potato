@@ -67,8 +67,8 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                 IconButton(
                   icon: Icon(
                     _showOnlyDownloaded 
-                      ? Icons.offline_pin
-                      : Icons.offline_pin_outlined,
+                      ? Icons.download_for_offline
+                      : Icons.download_for_offline_outlined,
                     color: Colors.white,
                   ),
                   tooltip: 'Show offline documents only',
@@ -169,7 +169,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                         isActive: selectedMachineId != null,
                       ),
                     
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 1),
                     
                     // Category filter dropdown
                     _buildFilterDropdown(
@@ -739,6 +739,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     );
     
     return '${machine.manufacturer} ${machine.model}';
+    // return '${machine.model}';
   }
 
   // Helper method to format date
