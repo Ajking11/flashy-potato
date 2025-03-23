@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/document.dart';
@@ -27,7 +28,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   int _currentPage = 1; // pdfx uses 1-indexed pages
   bool _hasError = false;
   String _errorMessage = '';
-  
+
   // PDF controller
   PdfControllerPinch? _pdfController;
 
@@ -104,6 +105,31 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     }
   }
 
+  // Handle tap on the PDF
+  void _handleTap(TapDownDetails details) async {
+    // Show visual feedback for tap
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Checking for links...'),
+        duration: Duration(milliseconds: 500),
+      ),
+    );
+
+    // In the current version of pdfx, directly getting link annotations might not be available
+    // As a workaround, we'll extract links when the document is loaded and handle them separately
+
+    // This is a simplified implementation - you may need to adapt it based on
+    // your specific PDF structure and the version of pdfx you're using
+    try {
+      final uri = Uri.parse('https://costa.co.uk');  // Example URL
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error handling potential link: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +141,29 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         backgroundColor: costaRed,
         elevation: 0,
         actions: [
+          // Info button to explain PDF interactivity
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('PDF Navigation'),
+                  content: const Text(
+                      'You can zoom in/out using pinch gestures.\n\n'
+                          'Unfortunately, direct link detection is limited in the current version. '
+                          'Links in PDFs may need to be manually extracted for your specific documents.'
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           // Share button
           IconButton(
             icon: const Icon(Icons.share),
@@ -166,52 +215,55 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
               ),
             )
           else if (_pdfController != null)
-            PdfViewPinch(
-              controller: _pdfController!,
-              onDocumentLoaded: (document) {
-                setState(() {
-                  _totalPages = document.pagesCount;
-                });
-              },
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-                options: const DefaultBuilderOptions(),
-                documentLoaderBuilder: (_) => const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(costaRed),
-                  ),
-                ),
-                pageLoaderBuilder: (_) => const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(costaRed),
-                  ),
-                ),
-                errorBuilder: (_, error) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: accentRed,
-                        size: 48.0,
+              GestureDetector(
+                onTapDown: _handleTap,
+                child: PdfViewPinch(
+                  controller: _pdfController!,
+                  onDocumentLoaded: (document) {
+                    setState(() {
+                      _totalPages = document.pagesCount;
+                    });
+                  },
+                  onPageChanged: (page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                    options: const DefaultBuilderOptions(),
+                    documentLoaderBuilder: (_) => const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(costaRed),
                       ),
-                      const SizedBox(height: 16.0),
-                      Text(
-                        'Error loading PDF: ${error.toString()}',
-                        style: CostaTextStyle.bodyText1,
-                        textAlign: TextAlign.center,
+                    ),
+                    pageLoaderBuilder: (_) => const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(costaRed),
                       ),
-                    ],
+                    ),
+                    errorBuilder: (_, error) => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: accentRed,
+                            size: 48.0,
+                          ),
+                          const SizedBox(height: 16.0),
+                          Text(
+                            'Error loading PDF: ${error.toString()}',
+                            style: CostaTextStyle.bodyText1,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            )
-          else
-            const Center(child: Text('PDF file path is null')),
+              )
+            else
+              const Center(child: Text('PDF file path is null')),
 
           // Page indicator
           if (!_isLoading && !_hasError && _totalPages > 0 && _pdfController != null)

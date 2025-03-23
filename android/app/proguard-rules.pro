@@ -1,0 +1,1 @@
+-keep class dev.fluttercommunity.plus.device_info.** { *; }
