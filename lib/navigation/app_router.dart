@@ -9,7 +9,7 @@ import '../screens/machine_detail_screen.dart';
 import '../screens/document_viewer_screen.dart';
 import '../screens/preferences_screen.dart';
 import '../services/session_manager.dart';
-import '../models/document.dart';
+
 import '../models/machine.dart';
 
 // Shell route branch for the main app with bottom navigation
@@ -99,11 +99,11 @@ class AppRouter {
                   final machine = getMachines().firstWhere(
                     (m) => m.machineId == machineId,
                     orElse: () => Machine(
-                      machineId: 'unknown',
-                      name: 'Unknown Machine',
-                      type: 'Unknown',
-                      imageAsset: '',
+                      manufacturer: 'Unknown',
+                      model: 'Machine',
+                      imagePath: '',
                       description: 'Machine not found',
+                      machineId: 'unknown',
                     ),
                   );
                   return MachineDetailScreen(machine: machine);
@@ -143,16 +143,15 @@ class ScaffoldWithNavBar extends StatefulWidget {
   final Widget child;
 
   const ScaffoldWithNavBar({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
 }
 
 class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
-  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
