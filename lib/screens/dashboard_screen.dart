@@ -4,11 +4,9 @@ import '../constants.dart';
 import '../providers/preferences_provider.dart';
 import '../providers/document_provider.dart';
 import '../models/machine.dart';
+import '../navigation/app_navigator.dart';
 import 'machine_detail_screen.dart';
 import 'preferences_screen.dart';
-import 'filter_json_screen.dart';
-import 'machine_list_screen.dart';
-import 'document_repository_screen.dart';
 import '../widgets/fade_animation.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -155,14 +153,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.water_drop,
         'color': Colors.blue,
         'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FilterJsonScreen(
-                onDashboardPressed: () => Navigator.pop(context),
-              ),
-            ),
-          );
+          // Use the parent navigator to switch to the Filters tab (index 1)
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+          // Find the AppNavigator and switch to the Filters tab
+          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
+          if (appNavigatorState != null) {
+            appNavigatorState.navigateTo(1);
+          }
         },
       },
       {
@@ -170,14 +170,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.coffee,
         'color': Colors.brown,
         'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MachineListScreen(
-                onDashboardPressed: () => Navigator.pop(context),
-              ),
-            ),
-          );
+          // Use the parent navigator to switch to the Machines tab (index 2)
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+          // Find the AppNavigator and switch to the Machines tab
+          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
+          if (appNavigatorState != null) {
+            appNavigatorState.navigateTo(2);
+          }
         },
       },
       {
@@ -185,12 +187,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.folder_outlined,
         'color': Colors.orange,
         'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DocumentRepositoryScreen(),
-            ),
-          );
+          // Use the parent navigator to switch to the Documents tab (index 3)
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+          // Find the AppNavigator and switch to the Documents tab
+          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
+          if (appNavigatorState != null) {
+            appNavigatorState.navigateTo(3);
+          }
         },
       },
       {
@@ -354,12 +360,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.arrow_forward_ios, size: 16),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DocumentRepositoryScreen(),
-                  ),
-                );
+                // Find the AppNavigator and switch to the Documents tab (index 3)
+                final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
+                if (appNavigatorState != null) {
+                  appNavigatorState.navigateTo(3);
+                }
               },
               constraints: const BoxConstraints(
                 maxHeight: 32,
@@ -413,14 +418,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MachineListScreen(
-                        onDashboardPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  );
+                  // Find the AppNavigator and switch to the Machines tab (index 2)
+                  final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
+                  if (appNavigatorState != null) {
+                    appNavigatorState.navigateTo(2);
+                  }
                 },
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add Favorites'),
