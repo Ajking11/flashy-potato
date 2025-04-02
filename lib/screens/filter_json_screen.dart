@@ -8,9 +8,7 @@ import '../widgets/fade_animation.dart';
 import '../constants.dart';
 
 class FilterJsonScreen extends StatefulWidget {
-  final VoidCallback onDashboardPressed;
-
-  const FilterJsonScreen({super.key, required this.onDashboardPressed});
+  const FilterJsonScreen({super.key});
 
   @override
   State<FilterJsonScreen> createState() => _FilterJsonScreenState();
@@ -104,11 +102,7 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
       backgroundColor: costaRed,
       elevation: 0.0,
       centerTitle: true,
-      // Use the onDashboardPressed callback from the parent for the back button
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: widget.onDashboardPressed,
-      ),
+      // No leading back button needed as we're using bottom navigation
     );
   }
 

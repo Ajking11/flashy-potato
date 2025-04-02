@@ -108,6 +108,10 @@ class _MachineDetailScreenState extends State<MachineDetailScreen> with SingleTi
         backgroundColor: costaRed,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
           child: Container(

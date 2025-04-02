@@ -6,6 +6,7 @@ import '../screens/document_repository_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../providers/document_provider.dart';
 import '../providers/preferences_provider.dart';
+import '../constants.dart';
 
 class AppNavigator extends StatefulWidget {
   const AppNavigator({super.key});
@@ -17,10 +18,8 @@ class AppNavigator extends StatefulWidget {
 class _AppNavigatorState extends State<AppNavigator> {
   int _selectedIndex = 0;
 
-  // Flag to control bottom navigation bar visibility
-  final bool showBottomNavigationBar = false;
-
-  void _navigateTo(int index) {
+  // Public method to allow navigation from other widgets
+  void navigateTo(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -33,12 +32,8 @@ class _AppNavigatorState extends State<AppNavigator> {
     super.initState();
     _pages = [
       const DashboardScreen(),
-      FilterJsonScreen(
-        onDashboardPressed: () => _navigateTo(0),
-      ),
-      MachineListScreen(
-        onDashboardPressed: () => _navigateTo(0),
-      ),
+      const FilterJsonScreen(),
+      const MachineListScreen(),
       const DocumentRepositoryScreen(),
     ];
   }
@@ -61,21 +56,23 @@ class _AppNavigatorState extends State<AppNavigator> {
       ],
       child: Scaffold(
         body: _pages[_selectedIndex],
-        bottomNavigationBar: showBottomNavigationBar
-            ? BottomNavigationBar(
+        bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
-          onTap: _navigateTo,
+          onTap: navigateTo,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: costaRed,
+          unselectedItemColor: Colors.grey,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard),
               label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.filter_list),
-              label: 'Filter',
+              icon: Icon(Icons.water_drop),
+              label: 'Filters',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.list),
+              icon: Icon(Icons.coffee),
               label: 'Machines',
             ),
             BottomNavigationBarItem(
@@ -83,8 +80,7 @@ class _AppNavigatorState extends State<AppNavigator> {
               label: 'Documents',
             ),
           ],
-        )
-            : null,
+        ),
       ),
     );
   }

@@ -170,6 +170,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         ),
         backgroundColor: costaRed,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           // Info button to explain PDF interactivity
           IconButton(
