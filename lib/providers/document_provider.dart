@@ -1,9 +1,11 @@
+// lib/providers/document_provider.dart
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/document.dart';
+import '../services/firebase_document_service.dart';
 
 class DocumentProvider with ChangeNotifier {
   List<TechnicalDocument> _documents = [];
@@ -12,6 +14,9 @@ class DocumentProvider with ChangeNotifier {
   String _searchQuery = '';
   String? _selectedMachineId;
   String? _selectedCategory;
+  
+  // Create an instance of the Firebase document service
+  final FirebaseDocumentService _documentService = FirebaseDocumentService();
 
   // Getters
   List<TechnicalDocument> get documents => _documents;
@@ -28,23 +33,50 @@ class DocumentProvider with ChangeNotifier {
     return provider;
   }
 
-  // Load documents from local JSON file
+  // Load documents from Firestore
   Future<void> _loadDocuments() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // In a real app, this would come from an API or database
-      final String jsonData = await rootBundle.loadString('assets/documents.json');
-      final List<dynamic> jsonList = json.decode(jsonData)['documents'];
+      // Load documents from Firebase instead of local JSON
+      _documents = await _documentService.getAllDocuments();
       
-      _documents = jsonList.map((json) => TechnicalDocument.fromJson(json)).toList();
+      // Check which documents are downloaded locally
+      final documentIds = _documents.map((doc) => doc.id).toList();
+      final downloadStatus = await _documentService.checkDownloadedDocuments(documentIds);
+      
+      // Update download status for each document
+      _documents = _documents.map((doc) {
+        return doc.copyWith(
+          isDownloaded: downloadStatus[doc.id] ?? false,
+        );
+      }).toList();
+      
       _applyFilters(); // Initialize filtered documents
       
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading documents: $e');
+      // Fallback to local JSON if Firebase fails
+      await _loadLocalDocuments();
+    }
+  }
+  
+  // Fallback method to load documents from local assets
+  Future<void> _loadLocalDocuments() async {
+    try {
+      final String jsonData = await rootBundle.loadString('assets/documents.json');
+      final List<dynamic> jsonList = json.decode(jsonData)['documents'];
+      
+      _documents = jsonList.map((json) => TechnicalDocument.fromJson(json)).toList();
+      _applyFilters();
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading local documents: $e');
       _isLoading = false;
       notifyListeners();
     }
@@ -109,22 +141,25 @@ class DocumentProvider with ChangeNotifier {
     }
   }
 
-  // Mark document as downloaded for offline access
+  // Mark document as downloaded for offline access using Firebase Storage
   Future<void> downloadDocument(String documentId) async {
     final docIndex = _documents.indexWhere((doc) => doc.id == documentId);
     if (docIndex == -1) return;
 
-    // Simulate download process
-    final document = _documents[docIndex];
-    
-    // In a real app, this would download the actual PDF
-    // For demonstration, we'll just update the isDownloaded status
-    _documents[docIndex] = document.copyWith(isDownloaded: true);
-    _applyFilters();
-    notifyListeners();
-    
-    // Save download status to persistent storage
-    await _saveDownloadStatus();
+    try {
+      final document = _documents[docIndex];
+      
+      // Download the document using Firebase Storage
+      final filePath = await _documentService.downloadDocument(document);
+      
+      // Update the document in the local list
+      _documents[docIndex] = document.copyWith(isDownloaded: true);
+      _applyFilters();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error downloading document: $e');
+      throw Exception('Failed to download document: $e');
+    }
   }
 
   // Remove a downloaded document
@@ -132,57 +167,17 @@ class DocumentProvider with ChangeNotifier {
     final docIndex = _documents.indexWhere((doc) => doc.id == documentId);
     if (docIndex == -1) return;
 
-    final document = _documents[docIndex];
-    _documents[docIndex] = document.copyWith(isDownloaded: false);
-    _applyFilters();
-    notifyListeners();
-    
-    // Update persistent storage
-    await _saveDownloadStatus();
-  }
-
-  // Save download status to persistent storage
-  Future<void> _saveDownloadStatus() async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/document_status.json');
+      // Remove the document using Firebase service
+      await _documentService.removeDownloadedDocument(documentId);
       
-      final Map<String, bool> downloadStatus = {};
-      for (var doc in _documents) {
-        downloadStatus[doc.id] = doc.isDownloaded;
-      }
-      
-      await file.writeAsString(json.encode(downloadStatus));
+      final document = _documents[docIndex];
+      _documents[docIndex] = document.copyWith(isDownloaded: false);
+      _applyFilters();
+      notifyListeners();
     } catch (e) {
-      debugPrint('Error saving download status: $e');
-    }
-  }
-
-  // Load download status from persistent storage
-  // ignore: unused_element
-  Future<void> _loadDownloadStatus() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/document_status.json');
-      
-      if (await file.exists()) {
-        final content = await file.readAsString();
-        final Map<String, dynamic> downloadStatus = json.decode(content);
-        
-        for (int i = 0; i < _documents.length; i++) {
-          final docId = _documents[i].id;
-          if (downloadStatus.containsKey(docId)) {
-            _documents[i] = _documents[i].copyWith(
-              isDownloaded: downloadStatus[docId] as bool
-            );
-          }
-        }
-        
-        _applyFilters();
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error loading download status: $e');
+      debugPrint('Error removing download: $e');
+      throw Exception('Failed to remove download: $e');
     }
   }
 }

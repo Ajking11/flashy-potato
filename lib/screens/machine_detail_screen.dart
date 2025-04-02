@@ -1,7 +1,9 @@
+// lib/screens/machine_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../models/machine.dart';
 import '../models/machine_detail.dart';
 import '../constants.dart';
+import '../services/firebase_machine_service.dart';
 import '../widgets/specifications_tab.dart';
 import '../widgets/maintenance_tab.dart';
 import '../widgets/troubleshooting_tab.dart';
@@ -26,6 +28,9 @@ class _MachineDetailScreenState extends State<MachineDetailScreen> with SingleTi
   bool _isLoading = true;
   MachineDetail? _machineDetail;
   String? _errorMessage;
+  
+  // Create Firebase machine service
+  final FirebaseMachineService _machineService = FirebaseMachineService();
 
   @override
   void initState() {
@@ -35,10 +40,29 @@ class _MachineDetailScreenState extends State<MachineDetailScreen> with SingleTi
   }
 
   Future<void> _loadMachineDetails() async {
-    // This would normally fetch data from an API or local JSON file
-    // For now, we'll use mock data
     try {
-      await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Try to fetch from Firestore first
+      try {
+        final details = await _machineService.getMachineDetails(widget.machine.machineId);
+        
+        if (details != null) {
+          setState(() {
+            _machineDetail = details;
+            _isLoading = false;
+          });
+          return;
+        }
+      } catch (firestoreError) {
+        debugPrint('Error fetching machine details from Firestore: $firestoreError');
+        // Continue to fallback if Firestore fails
+      }
+      
+      // Fallback to mock data
+      await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
       
       // Mock data - in a real app, you'd load this from a service
       final mockDetail = _getMockMachineDetail(widget.machine);
@@ -84,6 +108,10 @@ class _MachineDetailScreenState extends State<MachineDetailScreen> with SingleTi
         backgroundColor: costaRed,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
           child: Container(

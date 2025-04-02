@@ -7,9 +7,7 @@ import '../widgets/fade_animation.dart';
 import 'machine_detail_screen.dart';
 
 class MachineListScreen extends StatefulWidget {
-  final VoidCallback onDashboardPressed;
-
-  const MachineListScreen({super.key, required this.onDashboardPressed});
+  const MachineListScreen({super.key});
 
   @override
   State<MachineListScreen> createState() => _MachineListScreenState();
@@ -41,10 +39,6 @@ class _MachineListScreenState extends State<MachineListScreen> {
         backgroundColor: costaRed,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: widget.onDashboardPressed,
-        ),
       ),
       body: SafeArea(
         child: FutureBuilder<List<Machine>>(

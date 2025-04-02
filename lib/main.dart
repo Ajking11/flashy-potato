@@ -1,6 +1,9 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/filter_provider.dart';
 import 'providers/document_provider.dart';
 import 'providers/preferences_provider.dart';
@@ -8,8 +11,16 @@ import 'constants.dart';
 import 'screens/login_screen.dart';
 import 'services/session_manager.dart';
 import 'services/theme_service.dart';
+import 'navigation/app_navigator.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const MyApp());
 }
 
@@ -71,7 +82,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// SplashScreen now navigates to LoginScreen instead of AppNavigator
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -84,25 +94,37 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     
-    // Clear any existing session
-    SessionManager.clearSession();
+    // Don't automatically clear the session - check if it's valid
+    _checkAuthState();
+  }
+  
+  void _checkAuthState() async {
+    // Set a timer to ensure minimum splash screen display time
+    await Future.delayed(const Duration(seconds: 2));
     
-    // Set a timer to navigate to the login page after a delay
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {  // Check if widget is still mounted before using context
+    if (mounted) {
+      // Navigate to the appropriate screen based on auth state
+      if (SessionManager.isLoggedIn()) {
+        // If the user is already logged in, proceed to the app
+        debugPrint('User is logged in: ${SessionManager.getCurrentUserEmail()}');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AppNavigator()),
+        );
+      } else {
+        // If not logged in, go to login screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Splash screen UI remains the same
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          // Use a gradient from deep red to lighter red
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

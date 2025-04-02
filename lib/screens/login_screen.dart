@@ -1,7 +1,5 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
 import '../navigation/app_navigator.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
@@ -14,77 +12,106 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isPasswordIncorrect = false;
+  
   bool _isLoading = false;
   bool _isUnlocked = false;
+  String? _errorMessage;
+  bool _obscurePassword = true;
+  final _formKey = GlobalKey<FormState>();
 
-  // Store the SHA-256 hash of "costa_coffee_techy"
-  final String _hashedPassword = "58f92f9e3bbdd06d88a85ec7a09b8e88a17e1f63b0d42917f8006119c0259d6a";
-
-  @override
-  void initState() {
-    super.initState();
-  }
-  
   @override
   void dispose() {
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String _hashPassword(String password) {
-    // Add a salt prefix to the password
-    final saltedPassword = "costa_coffee_$password";
+  Future<void> _login() async {
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     
-    // Convert the salted password to bytes
-    final bytes = utf8.encode(saltedPassword);
-    
-    // Generate the SHA-256 hash
-    final digest = sha256.convert(bytes);
-    
-    // Return the hash as a hexadecimal string
-    return digest.toString();
-  }
-
-  void _validatePassword() {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate network delay
-    Future.delayed(const Duration(milliseconds: 800), () {
+    try {
+      // Attempt to log in with Firebase Authentication
+      await SessionManager.loginWithEmailAndPassword(
+        _emailController.text.trim(), 
+        _passwordController.text
+      );
+      
       if (!mounted) return;
       
-      // Hash the user input and compare with stored hash
-      final inputHash = _hashPassword(_passwordController.text);
+      // Update state to show authenticated
+      setState(() {
+        _isLoading = false;
+        _isUnlocked = true;
+      });
       
-      if (inputHash == _hashedPassword) {
-        // Set logged in status
-        SessionManager.setLoggedIn();
-        
-        // Update state to show authenticated
-        setState(() {
-          _isLoading = false;
-          _isUnlocked = true;
-        });
-        
-        // Navigate directly after a short delay
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const AppNavigator()),
-            );
-          }
-        });
-      } else {
-        // Password incorrect - show error
-        setState(() {
-          _isPasswordIncorrect = true;
-          _isLoading = false;
-        });
-      }
-    });
+      // Navigate to app after a short delay to show success animation
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AppNavigator()),
+          );
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Show error message
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  void _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = "Please enter your email address first";
+      });
+      return;
+    }
+
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      await SessionManager.requestPasswordReset(email);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset email sent. Please check your inbox.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   @override
@@ -92,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          // Use the same gradient as SplashScreen for consistency
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -109,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Static lock icon (no animation)
+                  // Logo and lock icon
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -145,102 +171,179 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center, // Changed to center alignment
-                      children: [
-                        // Title text
-                        const Text(
-                          'FSE TOOLBOX',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'CostaDisplayO',
-                            color: deepRed,
-                          ),
-                          textAlign: TextAlign.center, // Ensure title is centered
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Password message - now centered
-                        const Text(
-                          'Technician\'s key is present',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'CostaTextO',
-                            color: Colors.black87,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const Text(
-                          'Please enter the password:',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'CostaTextO',
-                            color: Colors.black87,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Password field
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          enabled: !_isUnlocked,
-                          decoration: InputDecoration(
-                            hintText: 'Password',
-                            errorText: _isPasswordIncorrect 
-                                ? 'Incorrect password' 
-                                : null,
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Title text
+                          const Text(
+                            'FSE TOOLBOX',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'CostaDisplayO',
+                              color: deepRed,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, 
-                              vertical: 16,
-                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          onSubmitted: _isUnlocked ? null : (_) => _validatePassword(),
-                          textAlign: TextAlign.center, // Center the password text input
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Login button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: (_isLoading || _isUnlocked) ? null : _validatePassword,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: costaRed,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
+                          const SizedBox(height: 16),
+                          
+                          // Login message
+                          const Text(
+                            'Please sign in to continue',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'CostaTextO',
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Email field
+                          TextFormField(
+                            controller: _emailController,
+                            enabled: !_isUnlocked,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              hintText: 'Email Address',
+                              prefixIcon: const Icon(Icons.email_outlined, color: costaRed),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
                               ),
-                              disabledBackgroundColor: _isUnlocked ? Colors.green : Colors.grey,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, 
+                                vertical: 16,
+                              ),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    _isUnlocked ? 'Authenticated' : 'Login',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                return 'Please enter a valid email address';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          
+                          // Password field
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            enabled: !_isUnlocked,
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              prefixIcon: const Icon(Icons.lock_outlined, color: costaRed),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword 
+                                    ? Icons.visibility_outlined 
+                                    : Icons.visibility_off_outlined,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, 
+                                vertical: 16,
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          
+                          // Forgot password link
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _isUnlocked ? null : _forgotPassword,
+                              style: TextButton.styleFrom(
+                                foregroundColor: costaRed,
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(10, 30),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('Forgot Password?'),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Error message
+                          if (_errorMessage != null)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          if (_errorMessage != null) const SizedBox(height: 16),
+                          
+                          // Login button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: (_isLoading || _isUnlocked) ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: costaRed,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                disabledBackgroundColor: _isUnlocked ? Colors.green : Colors.grey,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      _isUnlocked ? 'Signed In' : 'Sign In',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
