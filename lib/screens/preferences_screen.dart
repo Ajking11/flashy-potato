@@ -1,7 +1,10 @@
+// lib/screens/preferences_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/preferences_provider.dart';
 import '../constants.dart';
+import '../services/session_manager.dart';
+import 'login_screen.dart';
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
@@ -11,30 +14,6 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  // Create controller as class member to maintain focus between rebuilds
-  final TextEditingController _emailController = TextEditingController();
-  
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    
-    // Initialize/update controller with current email value
-    final userEmail = Provider.of<PreferencesProvider>(context, listen: false)
-        .preferences.userEmail;
-    
-    // Only set value if different, to avoid cursor position issues
-    if (_emailController.text != (userEmail ?? '')) {
-      _emailController.text = userEmail ?? '';
-    }
-  }
-  
-  @override
-  void dispose() {
-    // Cleanup controller when the widget is removed
-    _emailController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,8 +40,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // User Information section
-                _buildSectionHeader(context, 'User Information'),
+                // Account information section
+                _buildSectionHeader(context, 'Account Information'),
                 Card(
                   margin: const EdgeInsets.only(bottom: 24),
                   child: Padding(
@@ -73,95 +52,39 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         Row(
                           children: [
                             const Icon(
-                              Icons.email_outlined,
+                              Icons.account_circle_outlined,
                               color: costaRed,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Email Address',
+                              'Signed in as',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
-                            const Spacer(),
-                            // Show a verified badge if email is confirmed
-                            if (prefsProvider.preferences.isEmailConfirmed)
-                              const Tooltip(
-                                message: 'Email confirmed',
-                                child: Icon(
-                                  Icons.verified,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
-                              ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            hintText: 'Enter your email address',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            // Add a suffix icon based on confirmation status
-                            suffixIcon: prefsProvider.preferences.isEmailConfirmed
-                                ? const Icon(Icons.check_circle, color: Colors.green)
-                                : IconButton(
-                                    icon: const Icon(Icons.check),
-                                    tooltip: 'Confirm email',
-                                    onPressed: _emailController.text.isEmpty
-                                        ? null // Disable if empty
-                                        : () {
-                                            prefsProvider.confirmUserEmail();
-                                            // Show success message
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Email confirmed'),
-                                                backgroundColor: Colors.green,
-                                                duration: Duration(seconds: 2),
-                                              ),
-                                            );
-                                          },
-                                  ),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          // Disable text field when email is confirmed
-                          enabled: !prefsProvider.preferences.isEmailConfirmed,
-                          onChanged: (value) {
-                            // Only update if not confirmed
-                            if (!prefsProvider.preferences.isEmailConfirmed) {
-                              prefsProvider.updateUserEmail(
-                                  value.isEmpty ? null : value);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         Row(
                           children: [
+                            const Icon(
+                              Icons.email_outlined,
+                              color: costaRed,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
-                              child: const Text(
-                                'Your email is used for account recovery and important notifications',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                              child: Text(
+                                SessionManager.getCurrentUserEmail() ?? 'Not signed in',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Show Edit button if email is confirmed
-                            if (prefsProvider.preferences.isEmailConfirmed)
-                              TextButton(
-                                onPressed: () {
-                                  prefsProvider.resetEmailConfirmation();
-                                },
-                                child: const Text('Edit'),
-                              ),
                           ],
                         ),
                       ],
@@ -316,6 +239,132 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     ],
                   ),
                 ),
+                
+                // Sign Out button at the bottom of the page
+                const SizedBox(height: 32),
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      // Show sign out confirmation dialog with better styling
+                      final bool? confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Dialog header
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: costaRed.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.logout_rounded,
+                                        color: costaRed,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Sign Out',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: deepRed,
+                                        fontFamily: 'CostaDisplayO',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // Dialog content
+                                const Text(
+                                  'Are you sure you want to sign out?',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    height: 1.5,
+                                    color: Color(0xFF333333),
+                                    fontFamily: 'CostaTextO',
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                // Dialog buttons
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    // Cancel button
+                                    OutlinedButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: costaRed,
+                                        side: const BorderSide(color: costaRed),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(25),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      ),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    // Confirm button
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: costaRed,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(25),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      ),
+                                      child: const Text('Sign Out'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                      
+                      if (confirm == true) {
+                        await SessionManager.clearSession();
+                        if (!mounted) return;
+                        
+                        // Store the context in a local variable before the async gap
+                        final navigatorContext = context;
+                        
+                        // Navigate back to login screen using MaterialPageRoute instead of named route
+                        Navigator.of(navigatorContext).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ), 
+                          (route) => false
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign Out'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: costaRed,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           );
