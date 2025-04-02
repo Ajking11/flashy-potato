@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../models/document.dart';
 import '../models/machine.dart';
 import '../providers/document_provider.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
-import 'document_viewer_screen.dart';
 
 class DocumentRepositoryScreen extends StatefulWidget {
   final String? initialMachineId; // Optional: to pre-filter by machine
@@ -663,12 +663,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DocumentViewerScreen(document: document),
-            ),
-          );
+          context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(

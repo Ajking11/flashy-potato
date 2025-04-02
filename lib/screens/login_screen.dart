@@ -1,6 +1,6 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import '../navigation/app_navigator.dart';
+import 'package:go_router/go_router.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
 
@@ -57,9 +57,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       // Navigate to app after a short delay to show success animation
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const AppNavigator()),
-          );
+          context.go('/');
         }
       });
     } catch (e) {

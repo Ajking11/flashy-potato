@@ -3,21 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/document.dart';
 import '../constants.dart';
+import '../providers/document_provider.dart';
 
 class DocumentViewerScreen extends StatefulWidget {
-  final TechnicalDocument document;
+  final TechnicalDocument? document;
+  final String? documentId;
   final String? filePath; // Optional externally provided filePath
 
   const DocumentViewerScreen({
     super.key,
-    required this.document,
+    this.document,
+    this.documentId,
     this.filePath,
-  });
+  }) : assert(document != null || documentId != null, 'Either document or documentId must be provided');
 
   @override
   State<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
@@ -30,6 +34,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   int _currentPage = 1; // pdfx uses 1-indexed pages
   bool _hasError = false;
   String _errorMessage = '';
+  late TechnicalDocument _document;
 
   // PDF controller
   PdfControllerPinch? _pdfController;
@@ -40,6 +45,26 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize document from props or provider
+    if (widget.document != null) {
+      _document = widget.document!;
+    } else if (widget.documentId != null) {
+      // Get document from provider
+      final docProvider = Provider.of<DocumentProvider>(context, listen: false);
+      final doc = docProvider.getDocumentById(widget.documentId!);
+      if (doc != null) {
+        _document = doc;
+      } else {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Document not found';
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+    
     // If no external filePath was provided, load the document.
     if (widget.filePath == null) {
       _loadDocument();
@@ -88,7 +113,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       try {
         final storageRef = FirebaseStorage.instance
             .ref()
-            .child('documents/${widget.document.id}.pdf');
+            .child('documents/${_document.id}.pdf');
             
         // Download to a temporary file
         await storageRef.writeToFile(localFile);
@@ -165,7 +190,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.document.title,
+          _document.title,
           style: CostaTextStyle.appBarTitle,
         ),
         backgroundColor: costaRed,

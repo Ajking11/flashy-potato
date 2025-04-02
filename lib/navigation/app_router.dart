@@ -1,0 +1,219 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../screens/dashboard_screen.dart';
+import '../screens/filter_json_screen.dart';
+import '../screens/machine_list_screen.dart';
+import '../screens/document_repository_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/machine_detail_screen.dart';
+import '../screens/document_viewer_screen.dart';
+import '../screens/preferences_screen.dart';
+import '../services/session_manager.dart';
+import '../models/document.dart';
+import '../models/machine.dart';
+
+// Shell route branch for the main app with bottom navigation
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+class AppRouter {
+  static final GoRouter router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    initialLocation: '/',
+    debugLogDiagnostics: true,
+    redirect: (BuildContext context, GoRouterState state) {
+      // Check if the user is logged in
+      final bool isLoggedIn = SessionManager.isLoggedIn();
+      final bool isLoggingIn = state.matchedLocation == '/login';
+      
+      // If not logged in and not on login page, redirect to login
+      if (!isLoggedIn && !isLoggingIn) {
+        return '/login';
+      }
+      
+      // If logged in and on login page, redirect to home
+      if (isLoggedIn && isLoggingIn) {
+        return '/';
+      }
+      
+      // No redirect needed
+      return null;
+    },
+    routes: [
+      // Login route
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      
+      // Main app shell with bottom navigation
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) {
+          return ScaffoldWithNavBar(child: child);
+        },
+        routes: [
+          // Dashboard tab
+          GoRoute(
+            path: '/',
+            name: 'dashboard',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DashboardScreen(),
+            ),
+            routes: [
+              // Preferences screen (accessed from dashboard)
+              GoRoute(
+                path: 'preferences',
+                name: 'preferences',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) => const PreferencesScreen(),
+              ),
+            ],
+          ),
+          
+          // Filters tab
+          GoRoute(
+            path: '/filters',
+            name: 'filters',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: FilterJsonScreen(),
+            ),
+          ),
+          
+          // Machines tab
+          GoRoute(
+            path: '/machines',
+            name: 'machines',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: MachineListScreen(),
+            ),
+            routes: [
+              // Machine detail screen
+              GoRoute(
+                path: ':machineId',
+                name: 'machine-detail',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final machineId = state.pathParameters['machineId']!;
+                  final machine = getMachines().firstWhere(
+                    (m) => m.machineId == machineId,
+                    orElse: () => Machine(
+                      machineId: 'unknown',
+                      name: 'Unknown Machine',
+                      type: 'Unknown',
+                      imageAsset: '',
+                      description: 'Machine not found',
+                    ),
+                  );
+                  return MachineDetailScreen(machine: machine);
+                },
+              ),
+            ],
+          ),
+          
+          // Documents tab
+          GoRoute(
+            path: '/documents',
+            name: 'documents',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DocumentRepositoryScreen(),
+            ),
+            routes: [
+              // Document viewer screen
+              GoRoute(
+                path: ':documentId',
+                name: 'document-viewer',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final documentId = state.pathParameters['documentId']!;
+                  return DocumentViewerScreen(documentId: documentId);
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+// Scaffold with bottom navigation bar
+class ScaffoldWithNavBar extends StatefulWidget {
+  final Widget child;
+
+  const ScaffoldWithNavBar({
+    Key? key,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: widget.child,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _calculateSelectedIndex(context),
+        onTap: (int idx) => _onItemTapped(idx, context),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.water_drop),
+            label: 'Filters',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.coffee),
+            label: 'Machines',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder),
+            label: 'Documents',
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).matchedLocation;
+    if (location.startsWith('/filters')) {
+      return 1;
+    }
+    if (location.startsWith('/machines')) {
+      return 2;
+    }
+    if (location.startsWith('/documents')) {
+      return 3;
+    }
+    return 0;
+  }
+
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        GoRouter.of(context).go('/');
+        break;
+      case 1:
+        GoRouter.of(context).go('/filters');
+        break;
+      case 2:
+        GoRouter.of(context).go('/machines');
+        break;
+      case 3:
+        GoRouter.of(context).go('/documents');
+        break;
+    }
+  }
+}

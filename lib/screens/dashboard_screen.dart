@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../constants.dart';
 import '../providers/preferences_provider.dart';
 import '../providers/document_provider.dart';
 import '../models/machine.dart';
-import '../navigation/app_navigator.dart';
 import 'machine_detail_screen.dart';
-import 'preferences_screen.dart';
 import '../widgets/fade_animation.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -31,10 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PreferencesScreen()),
-              );
+              context.pushNamed('preferences');
             },
           ),
         ],
@@ -153,16 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.water_drop,
         'color': Colors.blue,
         'onTap': () {
-          // Use the parent navigator to switch to the Filters tab (index 1)
-          final navigator = Navigator.of(context);
-          if (navigator.canPop()) {
-            navigator.pop();
-          }
-          // Find the AppNavigator and switch to the Filters tab
-          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
-          if (appNavigatorState != null) {
-            appNavigatorState.navigateTo(1);
-          }
+          context.go('/filters');
         },
       },
       {
@@ -170,16 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.coffee,
         'color': Colors.brown,
         'onTap': () {
-          // Use the parent navigator to switch to the Machines tab (index 2)
-          final navigator = Navigator.of(context);
-          if (navigator.canPop()) {
-            navigator.pop();
-          }
-          // Find the AppNavigator and switch to the Machines tab
-          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
-          if (appNavigatorState != null) {
-            appNavigatorState.navigateTo(2);
-          }
+          context.go('/machines');
         },
       },
       {
@@ -187,16 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'icon': Icons.folder_outlined,
         'color': Colors.orange,
         'onTap': () {
-          // Use the parent navigator to switch to the Documents tab (index 3)
-          final navigator = Navigator.of(context);
-          if (navigator.canPop()) {
-            navigator.pop();
-          }
-          // Find the AppNavigator and switch to the Documents tab
-          final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
-          if (appNavigatorState != null) {
-            appNavigatorState.navigateTo(3);
-          }
+          context.go('/documents');
         },
       },
       {
@@ -418,11 +387,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Find the AppNavigator and switch to the Machines tab (index 2)
-                  final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
-                  if (appNavigatorState != null) {
-                    appNavigatorState.navigateTo(2);
-                  }
+                  context.go('/machines');
                 },
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add Favorites'),
@@ -463,12 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           child: InkWell(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MachineDetailScreen(machine: machine),
-                ),
-              );
+              context.pushNamed('machine-detail', pathParameters: {'machineId': machine.machineId});
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
@@ -565,10 +525,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DocumentRepositoryScreen()),
-                  );
+                  context.go('/documents');
                 },
                 icon: const Icon(Icons.folder_outlined, size: 16),
                 label: const Text('Browse Documents'),
@@ -663,10 +620,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }),
           InkWell(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const DocumentRepositoryScreen()),
-              );
+              context.go('/documents');
             },
             child: Container(
               width: double.infinity,

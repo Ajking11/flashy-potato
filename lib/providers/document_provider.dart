@@ -25,6 +25,15 @@ class DocumentProvider with ChangeNotifier {
   String get searchQuery => _searchQuery;
   String? get selectedMachineId => _selectedMachineId;
   String? get selectedCategory => _selectedCategory;
+  
+  // Get document by ID
+  TechnicalDocument? getDocumentById(String id) {
+    try {
+      return _documents.firstWhere((doc) => doc.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
 
   // Initialize provider with data
   static Future<DocumentProvider> initialize() async {

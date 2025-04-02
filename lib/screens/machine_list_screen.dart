@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../models/machine.dart';
 import '../providers/preferences_provider.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
-import 'machine_detail_screen.dart';
 
 class MachineListScreen extends StatefulWidget {
   const MachineListScreen({super.key});
@@ -129,12 +129,7 @@ class _MachineListScreenState extends State<MachineListScreen> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MachineDetailScreen(machine: machine),
-                  ),
-                );
+                context.pushNamed('machine-detail', pathParameters: {'machineId': machine.machineId});
               },
               child: Padding(
                 padding: const EdgeInsets.all(12),

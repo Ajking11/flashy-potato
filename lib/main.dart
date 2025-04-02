@@ -8,10 +8,9 @@ import 'providers/filter_provider.dart';
 import 'providers/document_provider.dart';
 import 'providers/preferences_provider.dart';
 import 'constants.dart';
-import 'screens/login_screen.dart';
 import 'services/session_manager.dart';
 import 'services/theme_service.dart';
-import 'navigation/app_navigator.dart';
+import 'navigation/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,11 +54,11 @@ class MyApp extends StatelessWidget {
             ],
             child: Consumer<PreferencesProvider>(
               builder: (context, prefsProvider, child) {
-                return MaterialApp(
+                return MaterialApp.router(
                   title: 'Costa Coffee FSE Toolbox',
                   theme: ThemeService.getLightTheme(),
                   debugShowCheckedModeBanner: true,
-                  home: const SplashScreen(),
+                  routerConfig: AppRouter.router,
                 );
               },
             ),
@@ -68,13 +67,7 @@ class MyApp extends StatelessWidget {
           // Return a loading screen while initializing
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            home: Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(costaRed),
-                ),
-              ),
-            ),
+            home: SplashScreen(),
           );
         }
       },
@@ -82,42 +75,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    
-    // Don't automatically clear the session - check if it's valid
-    _checkAuthState();
-  }
-  
-  void _checkAuthState() async {
-    // Set a timer to ensure minimum splash screen display time
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (mounted) {
-      // Navigate to the appropriate screen based on auth state
-      if (SessionManager.isLoggedIn()) {
-        // If the user is already logged in, proceed to the app
-        debugPrint('User is logged in: ${SessionManager.getCurrentUserEmail()}');
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AppNavigator()),
-        );
-      } else {
-        // If not logged in, go to login screen
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

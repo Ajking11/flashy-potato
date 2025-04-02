@@ -1,10 +1,10 @@
 // lib/screens/preferences_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/preferences_provider.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
-import 'login_screen.dart';
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
@@ -343,13 +343,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         // Store the context in a local variable before the async gap
                         final navigatorContext = context;
                         
-                        // Navigate back to login screen using MaterialPageRoute instead of named route
-                        Navigator.of(navigatorContext).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ), 
-                          (route) => false
-                        );
+                        // Navigate back to login screen
+                        GoRouter.of(navigatorContext).go('/login');
                       }
                     },
                     icon: const Icon(Icons.logout),
