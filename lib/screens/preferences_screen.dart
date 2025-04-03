@@ -245,6 +245,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 Center(
                   child: ElevatedButton.icon(
                     onPressed: () async {
+                      // Capture router at the beginning to use after async operations
+                      final router = GoRouter.of(context);
+                      
                       // Show sign out confirmation dialog with better styling
                       final bool? confirm = await showDialog<bool>(
                         context: context,
@@ -340,11 +343,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         await SessionManager.clearSession();
                         if (!mounted) return;
                         
-                        // Store the context in a local variable before the async gap
-                        final navigatorContext = context;
-                        
-                        // Navigate back to login screen
-                        GoRouter.of(navigatorContext).go('/login');
+                        // Navigate back to login screen using captured router
+                        router.go('/login');
                       }
                     },
                     icon: const Icon(Icons.logout),
