@@ -65,6 +65,16 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       }
     }
     
+    // Check if document is downloaded
+    if (_document != null && !_document.isDownloaded && widget.filePath == null) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Document is not downloaded. Please download it first.';
+        _isLoading = false;
+      });
+      return;
+    }
+    
     // If no external filePath was provided, load the document.
     if (widget.filePath == null) {
       _loadDocument();
@@ -95,7 +105,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     try {
       // First check if the document is already downloaded
       final dir = await getApplicationDocumentsDirectory();
-      final localPath = '${dir.path}/${widget.document?.id ?? widget.documentId}.pdf';
+      // A document with an ID is present
+      final String documentId = widget.document?.id ?? widget.documentId ?? '';
+      final localPath = '${dir.path}/$documentId.pdf';
       final localFile = File(localPath);
       
       if (await localFile.exists()) {
@@ -129,6 +141,25 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       } catch (storageError) {
         debugPrint('Error downloading from Firebase: $storageError');
         // Fall back to asset loading if Firebase fails
+      }
+      
+      // Try to use downloadURL if available
+      if (widget.document?.downloadURL != null && widget.document!.downloadURL!.isNotEmpty) {
+        try {
+          final storageRef = FirebaseStorage.instance.refFromURL(widget.document!.downloadURL!);
+          await storageRef.writeToFile(localFile);
+          
+          _initializePdfControllerWithPath(localFile.path);
+          
+          setState(() {
+            _pdfPath = localFile.path;
+            _isLoading = false;
+          });
+          return;
+        } catch (e) {
+          debugPrint('Error downloading from URL: $e');
+          // Continue to next fallback
+        }
       }
       
       // Fallback to loading from assets

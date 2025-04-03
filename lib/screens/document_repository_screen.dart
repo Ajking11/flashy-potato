@@ -23,7 +23,6 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _showOnlyDownloaded = false;
-  late List<Machine> _machines;
   
   @override
   void initState() {
@@ -36,8 +35,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
       });
     }
     
-    // Load machine list
-    _machines = getMachines();
+    // No need to load machine list here
   }
 
   @override
@@ -55,9 +53,35 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     return showAppBar
         ? Scaffold(
             appBar: AppBar(
-              title: const Text(
-                'Document Repository',
-                style: CostaTextStyle.appBarTitle,
+              title: Row(
+                children: [
+                  const Text(
+                    'Document Repository',
+                    style: CostaTextStyle.appBarTitle,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Firebase',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               backgroundColor: costaRed,
               elevation: 0,
@@ -634,21 +658,77 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                     color: Colors.grey.shade600,
                   ),
                 ),
+                // Refresh button
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    documentProvider.refreshDocuments();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh Documents'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: costaRed,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ],
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: documents.length,
-          itemBuilder: (context, index) {
-            final document = documents[index];
-            return FadeAnimation(
-              delay: Duration(milliseconds: 50 * index),
-              child: _buildDocumentCard(document),
-            );
-          },
+        // Use RefreshIndicator for pull-to-refresh functionality
+        return RefreshIndicator(
+          onRefresh: () => documentProvider.refreshDocuments(),
+          color: costaRed,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: documents.length + 1, // Add one for the Firebase indicator
+            itemBuilder: (context, index) {
+              // First item is the Firebase indicator
+              if (index == 0) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.cloud, color: Colors.blue, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Documents from Firebase',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Pull to refresh',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              // Adjust index to account for the Firebase indicator
+              final docIndex = index - 1;
+              final document = documents[docIndex];
+              
+              return FadeAnimation(
+                delay: Duration(milliseconds: 50 * docIndex),
+                child: _buildDocumentCard(document),
+              );
+            },
+          ),
         );
       },
     );
@@ -663,7 +743,14 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
       ),
       child: InkWell(
         onTap: () {
-          context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
+          // Check if document is downloaded
+          if (document.isDownloaded) {
+            // If downloaded, navigate to viewer
+            context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
+          } else {
+            // If not downloaded, show download prompt
+            _showDownloadPrompt(document);
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(
@@ -758,6 +845,11 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   Widget _buildDownloadButton(TechnicalDocument document) {
+    final documentProvider = Provider.of<DocumentProvider>(context, listen: true);
+    final isDownloading = documentProvider.isDownloading(document.id);
+    final downloadProgress = documentProvider.getDownloadProgress(document.id);
+    
+    // If document is downloaded, show remove button
     if (document.isDownloaded) {
       return TextButton.icon(
         onPressed: () {
@@ -773,9 +865,40 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
-    } else {
+    } 
+    // If document is currently downloading, show progress
+    else if (isDownloading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Progress indicator
+          SizedBox(
+            width: 80,
+            height: 4,
+            child: LinearProgressIndicator(
+              value: downloadProgress,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Progress text
+          Text(
+            '${(downloadProgress * 100).toInt()}%',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      );
+    } 
+    // If document is not downloaded and not downloading, show download button
+    else {
       return TextButton.icon(
         onPressed: () {
+          // Start download
           Provider.of<DocumentProvider>(context, listen: false)
               .downloadDocument(document.id);
         },
@@ -825,6 +948,82 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   // Helper method to format date
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+  
+  // Show prompt to download document before viewing
+  void _showDownloadPrompt(TechnicalDocument document) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Download Required'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'The document "${document.title}" needs to be downloaded before viewing.',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Size: ${document.fileSizeKB} KB',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey,
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Close dialog
+              Navigator.pop(context);
+              // Start download
+              Provider.of<DocumentProvider>(context, listen: false)
+                  .downloadDocument(document.id)
+                  .then((_) {
+                // After download completes, navigate to viewer
+                if (mounted) {
+                  context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
+                }
+              }).catchError((error) {
+                // Show error message if download fails
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to download: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              });
+            },
+            icon: const Icon(Icons.download, size: 16),
+            label: const Text('Download Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: costaRed,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Helper method to get category color
