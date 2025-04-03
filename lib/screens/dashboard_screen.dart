@@ -5,7 +5,6 @@ import '../constants.dart';
 import '../providers/preferences_provider.dart';
 import '../providers/document_provider.dart';
 import '../models/machine.dart';
-import '../navigation/app_navigator.dart';
 import '../widgets/fade_animation.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -329,11 +328,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.arrow_forward_ios, size: 16),
               onPressed: () {
-                // Find the AppNavigator and switch to the Documents tab (index 3)
-                final appNavigatorState = context.findAncestorStateOfType<_AppNavigatorState>();
-                if (appNavigatorState != null) {
-                  appNavigatorState.navigateTo(3);
-                }
+                // Navigate to documents route using go_router
+                context.go('/documents');
               },
               constraints: const BoxConstraints(
                 maxHeight: 32,
