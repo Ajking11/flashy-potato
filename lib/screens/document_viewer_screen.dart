@@ -95,7 +95,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     try {
       // First check if the document is already downloaded
       final dir = await getApplicationDocumentsDirectory();
-      final localPath = '${dir.path}/${widget.document.id}.pdf';
+      final localPath = '${dir.path}/${widget.document?.id ?? widget.documentId}.pdf';
       final localFile = File(localPath);
       
       if (await localFile.exists()) {
@@ -132,7 +132,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       }
       
       // Fallback to loading from assets
-      final String assetPath = widget.document.filePath;
+      final String assetPath = widget.document!.filePath;
       debugPrint('Loading PDF from asset: $assetPath');
       final ByteData bytes = await rootBundle.load(assetPath);
       
