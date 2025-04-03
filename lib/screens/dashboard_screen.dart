@@ -5,7 +5,7 @@ import '../constants.dart';
 import '../providers/preferences_provider.dart';
 import '../providers/document_provider.dart';
 import '../models/machine.dart';
-import 'machine_detail_screen.dart';
+import '../navigation/app_navigator.dart';
 import '../widgets/fade_animation.dart';
 
 class DashboardScreen extends StatefulWidget {
