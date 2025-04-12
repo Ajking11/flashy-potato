@@ -309,7 +309,7 @@ class ResultCard extends StatelessWidget {
                     ],
                   ),
 
-                  // Expanded details section
+                  // Simplified expanded details section
                   if (showExpandedDetails) ...[
                     const SizedBox(height: 24),
                     Container(

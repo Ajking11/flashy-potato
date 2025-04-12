@@ -7,8 +7,8 @@ import 'firebase_options.dart';
 import 'providers/filter_provider.dart';
 import 'providers/document_provider.dart';
 import 'providers/preferences_provider.dart';
+import 'providers/software_provider.dart';
 import 'constants.dart';
-import 'services/session_manager.dart';
 import 'services/theme_service.dart';
 import 'navigation/app_router.dart';
 
@@ -33,12 +33,14 @@ class MyApp extends StatelessWidget {
         FilterProvider.initialize(),
         DocumentProvider.initialize(),
         PreferencesProvider.initialize(),
+        SoftwareProvider.initialize(),
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           final filterProvider = snapshot.data?[0] as FilterProvider? ?? FilterProvider();
           final documentProvider = snapshot.data?[1] as DocumentProvider? ?? DocumentProvider();
           final preferencesProvider = snapshot.data?[2] as PreferencesProvider? ?? PreferencesProvider();
+          final softwareProvider = snapshot.data?[3] as SoftwareProvider? ?? SoftwareProvider();
           
           return MultiProvider(
             providers: [
@@ -50,6 +52,9 @@ class MyApp extends StatelessWidget {
               ),
               ChangeNotifierProvider<PreferencesProvider>.value(
                 value: preferencesProvider,
+              ),
+              ChangeNotifierProvider<SoftwareProvider>.value(
+                value: softwareProvider,
               ),
             ],
             child: Consumer<PreferencesProvider>(

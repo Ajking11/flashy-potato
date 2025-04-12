@@ -8,6 +8,7 @@ import '../screens/login_screen.dart';
 import '../screens/machine_detail_screen.dart';
 import '../screens/document_viewer_screen.dart';
 import '../screens/preferences_screen.dart';
+import '../screens/software_repository_screen.dart';
 import '../services/session_manager.dart';
 
 import '../models/machine.dart';
@@ -132,6 +133,15 @@ class AppRouter {
               ),
             ],
           ),
+
+          // Software tab
+          GoRoute(
+            path: '/software',
+            name: 'software',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SoftwareRepositoryScreen(),
+            ),
+          ),
         ],
       ),
     ],
@@ -180,6 +190,10 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
             icon: Icon(Icons.folder),
             label: 'Documents',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.system_update),
+            label: 'Software',
+          ),
         ],
       ),
     );
@@ -195,6 +209,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
     }
     if (location.startsWith('/documents')) {
       return 3;
+    }
+    if (location.startsWith('/software')) {
+      return 4;
     }
     return 0;
   }
@@ -212,6 +229,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
         break;
       case 3:
         GoRouter.of(context).go('/documents');
+        break;
+      case 4:
+        GoRouter.of(context).go('/software');
         break;
     }
   }

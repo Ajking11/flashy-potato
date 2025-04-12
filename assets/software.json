@@ -1,0 +1,170 @@
+{
+  "software": [
+    {
+      "id": "sw001",
+      "name": "MARLOW MK3 Firmware",
+      "version": "1.42.4",
+      "description": "Latest firmware update for MARLOW MK3 machines. Improves temperature stability and fixes minor UI issues.",
+      "machineId": ["marlow3"],
+      "category": "Firmware",
+      "filePath": "software/marlow_mk3_v1.42.4.bin",
+      "fileSizeKB": 1204,
+      "uploadDate": "2023-11-15T08:30:00Z",
+      "tags": ["marlow", "firmware", "update", "stable"],
+      "uploadedBy": "John Smith",
+      "changelogNotes": [
+        "Fixed temperature fluctuation in standby mode",
+        "Improved water flow rate accuracy by 8%",
+        "Updated menu translations for 5 European languages",
+        "Fixed occasional display freeze when accessing service menu"
+      ],
+      "previousVersion": "1.41.9"
+    },
+    {
+      "id": "sw002",
+      "name": "Bean Calibration Utility",
+      "version": "2.1.0",
+      "description": "Calibration tool for all machines with automatic bean grinding. Ensures precise grinding for consistent extraction.",
+      "machineId": ["marlow3", "souls10", "marlow4"],
+      "category": "Calibration Tool",
+      "filePath": "software/bean_calibration_v2.1.0.zip",
+      "fileSizeKB": 3508,
+      "uploadDate": "2023-10-22T14:15:00Z",
+      "tags": ["calibration", "grinder", "beans", "utility"],
+      "uploadedBy": "Emma Johnson",
+      "changelogNotes": [
+        "Added support for MARLOW MK4 machines",
+        "Improved detection algorithm for worn grinder burrs",
+        "New graphical interface with real-time feedback",
+        "Added reporting feature for maintenance records"
+      ],
+      "previousVersion": "2.0.5"
+    },
+    {
+      "id": "sw003",
+      "name": "SOULS10 Diagnostic Suite",
+      "version": "3.5.2",
+      "description": "Comprehensive diagnostic tool for SOULS10 machines. Tests all components and sensors for optimal performance.",
+      "machineId": ["souls10"],
+      "category": "Diagnostic",
+      "filePath": "software/souls10_diag_v3.5.2.exe",
+      "fileSizeKB": 8720,
+      "uploadDate": "2023-09-18T09:45:00Z",
+      "tags": ["diagnostic", "souls10", "testing", "troubleshooting"],
+      "uploadedBy": "Robert Chen",
+      "changelogNotes": [
+        "Added milk system pressure test",
+        "Improved flow sensor accuracy testing",
+        "New temperature sensor calibration routine",
+        "Fixed connectivity issues with older machine firmware",
+        "Added exportable test reports in PDF format"
+      ],
+      "previousVersion": "3.4.8"
+    },
+    {
+      "id": "sw004",
+      "name": "Service Terminal Software",
+      "version": "5.1.3",
+      "description": "Service terminal utility for all Costa Coffee machines. Connects to machines via USB or Bluetooth for maintenance and repairs.",
+      "machineId": ["marlow3", "marlow4", "souls10", "c300", "c500", "c1100"],
+      "category": "Utility",
+      "filePath": "software/service_terminal_v5.1.3.msi",
+      "fileSizeKB": 12480,
+      "uploadDate": "2023-11-05T16:20:00Z",
+      "tags": ["service", "utility", "maintenance", "all-machines"],
+      "uploadedBy": "Admin",
+      "changelogNotes": [
+        "Added support for MARLOW MK4 machines",
+        "New user interface with dark mode support",
+        "Improved Bluetooth connectivity stability",
+        "Enhanced error logging and diagnostic capabilities",
+        "Added maintenance schedule reminders feature"
+      ],
+      "previousVersion": "5.0.7"
+    },
+    {
+      "id": "sw005",
+      "name": "CupConnect Point-of-Sale Integration",
+      "version": "2.3.1",
+      "description": "Integration software for connecting Costa Coffee machines to point-of-sale systems. Tracks sales, ingredient usage, and maintenance needs.",
+      "machineId": ["c500", "c1100"],
+      "category": "Utility",
+      "filePath": "software/cupconnect_pos_v2.3.1.zip",
+      "fileSizeKB": 5840,
+      "uploadDate": "2023-08-28T11:30:00Z",
+      "tags": ["pos", "integration", "sales", "tracking"],
+      "uploadedBy": "Admin",
+      "changelogNotes": [
+        "Added support for Square POS systems",
+        "New inventory management dashboard",
+        "Improved sales reporting with exportable data",
+        "Fixed synchronization issues with cloud databases",
+        "Added user permission management system"
+      ],
+      "previousVersion": "2.2.5"
+    },
+    {
+      "id": "sw006",
+      "name": "C500 Firmware Update",
+      "version": "2.8.0",
+      "description": "Latest firmware for C500 machines with touchscreen interface. Improves reliability and adds new features.",
+      "machineId": ["c500"],
+      "category": "Firmware",
+      "filePath": "software/c500_firmware_v2.8.0.bin",
+      "fileSizeKB": 2230,
+      "uploadDate": "2023-10-10T13:45:00Z",
+      "tags": ["c500", "firmware", "update", "touchscreen"],
+      "uploadedBy": "Sarah Wilson",
+      "changelogNotes": [
+        "Added two new specialty drink options",
+        "Improved touchscreen responsiveness",
+        "Enhanced power management for 15% reduced standby power",
+        "Fixed milk frothing temperature control issue",
+        "Updated UI with new Costa brand guidelines"
+      ],
+      "previousVersion": "2.7.2"
+    },
+    {
+      "id": "sw007",
+      "name": "Milk System Configuration Tool",
+      "version": "1.9.4",
+      "description": "Configuration utility for milk systems across all machine types. Calibrates foam density, temperature, and flow rates.",
+      "machineId": ["marlow3", "marlow4", "souls10", "c500", "c1100"],
+      "category": "Configuration Tool",
+      "filePath": "software/milk_config_v1.9.4.exe",
+      "fileSizeKB": 3180,
+      "uploadDate": "2023-11-20T10:15:00Z",
+      "tags": ["milk", "configuration", "calibration", "foam"],
+      "uploadedBy": "Paul Davis",
+      "changelogNotes": [
+        "Added support for new dairy-free milk alternatives",
+        "Improved temperature consistency algorithm",
+        "New foam density calibration procedure",
+        "Fixed steam wand cleaning cycle timing issue",
+        "Added visual guide for optimal milk texturing"
+      ],
+      "previousVersion": "1.8.7"
+    },
+    {
+      "id": "sw008",
+      "name": "Energy Efficiency Optimizer",
+      "version": "1.2.0",
+      "description": "Utility to optimize energy usage on all Costa machine models. Reduces power consumption without affecting drink quality.",
+      "machineId": ["marlow3", "marlow4", "souls10", "c300", "c500", "c1100"],
+      "category": "Utility",
+      "filePath": "software/energy_optimizer_v1.2.0.zip",
+      "fileSizeKB": 1840,
+      "uploadDate": "2023-09-05T15:30:00Z",
+      "tags": ["energy", "efficiency", "eco", "sustainability"],
+      "uploadedBy": "Green Team",
+      "changelogNotes": [
+        "Added smart standby mode scheduling",
+        "Improved boiler insulation controls",
+        "New power usage analytics dashboard",
+        "Added support for peak/off-peak energy optimization",
+        "Fixed heating element timing issue on SOULS10 machines"
+      ],
+      "previousVersion": "1.1.2"
+    }
+  ]
+}

@@ -101,14 +101,15 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
       ),
       backgroundColor: costaRed,
       elevation: 0.0,
-      centerTitle: true,
+      centerTitle: false,
       // No leading back button needed as we're using bottom navigation
     );
   }
 
   // Custom loading spinner with Costa branding
-  Widget _buildLoadingSpinner() {
+  Widget _buildLoadingSpinner({Key? key}) {
     return Center(
+      key: key,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -141,8 +142,9 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build calculating view
-  Widget _buildCalculatingView() {
+  Widget _buildCalculatingView({Key? key}) {
     return SingleChildScrollView(
+      key: key,
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
@@ -162,13 +164,14 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build results view
-  Widget _buildResultsView(FilterProvider filterProvider) {
+  Widget _buildResultsView(FilterProvider filterProvider, {Key? key}) {
     // Get user input values as integers
     final tempHardness = int.tryParse(tempHardnessController.text) ?? 0;
     final totalHardness = int.tryParse(totalHardnessController.text) ?? 0;
     final cpd = int.tryParse(cpdController.text) ?? 0;
     
     return SingleChildScrollView(
+      key: key,
       padding: const EdgeInsets.all(16.0),
       child: FadeAnimation(
         child: ResultCard(
@@ -192,8 +195,9 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build wide screen input view
-  Widget _buildWideInputView() {
+  Widget _buildWideInputView({Key? key}) {
     return Row(
+      key: key,
       children: [
         Expanded(
           flex: 1,
@@ -247,8 +251,9 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build narrow screen input view
-  Widget _buildNarrowInputView() {
+  Widget _buildNarrowInputView({Key? key}) {
     return SingleChildScrollView(
+      key: key,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FadeAnimation(
@@ -268,11 +273,11 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build input view (responsive)
-  Widget _buildInputView() {
+  Widget _buildInputView({Key? key}) {
     if (MediaQuery.of(context).size.width >= 600) {
-      return _buildWideInputView();
+      return _buildWideInputView(key: key);
     } else {
-      return _buildNarrowInputView();
+      return _buildNarrowInputView(key: key);
     }
   }
 
@@ -295,22 +300,32 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
                 // Update animation state when provider state changes
                 _updateAnimationState(filterProvider.isLoading || filterProvider.isCalculating);
                 
-                // Choose the appropriate view based on state
-                if (filterProvider.isLoading) {
-                  return _buildLoadingSpinner();
-                } else if (filterProvider.isCalculating) {
-                  return _buildCalculatingView();
-                } else if (filterProvider.hasResults) {
-                  return _buildResultsView(filterProvider);
-                } else {
-                  return _buildInputView();
-                }
+                // Use AnimatedSwitcher for smooth transitions between states
+                // Simplify animation to isolate potential issues
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: _getStateWidget(filterProvider),
+                );
               },
             ),
           ],
         ),
       ),
     );
+  }
+  
+  // Helper method to get the correct widget for current state
+  Widget _getStateWidget(FilterProvider filterProvider) {
+    // Give each state a unique key to ensure animation runs
+    if (filterProvider.isLoading) {
+      return _buildLoadingSpinner(key: const ValueKey('loading'));
+    } else if (filterProvider.isCalculating) {
+      return _buildCalculatingView(key: const ValueKey('calculating'));
+    } else if (filterProvider.hasResults) {
+      return _buildResultsView(filterProvider, key: const ValueKey('results'));
+    } else {
+      return _buildInputView(key: const ValueKey('input'));
+    }
   }
 
   @override

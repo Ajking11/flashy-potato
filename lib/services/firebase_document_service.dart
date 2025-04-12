@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart' hide debugPrint;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -39,7 +38,7 @@ class FirebaseDocumentService {
         debugPrint('Found ${alternateSnapshot.docs.length} documents in alternate collection');
         
         return alternateSnapshot.docs.map((doc) {
-          final docData = doc.data() as Map<String, dynamic>;
+          final docData = doc.data();
           return TechnicalDocument.fromFirestore(docData, doc.id);
         }).toList();
       }
@@ -223,13 +222,13 @@ class FirebaseDocumentService {
       // First try to search by title
       final QuerySnapshot titleSnapshot = await _documentsCollection
           .where('title', isGreaterThanOrEqualTo: query)
-          .where('title', isLessThanOrEqualTo: query + '\uf8ff')
+          .where('title', isLessThanOrEqualTo: '$query\uf8ff')
           .get();
           
       // Then try description
       final QuerySnapshot descSnapshot = await _documentsCollection
           .where('description', isGreaterThanOrEqualTo: query)
-          .where('description', isLessThanOrEqualTo: query + '\uf8ff')
+          .where('description', isLessThanOrEqualTo: '$query\uf8ff')
           .get();
       
       // Combine results and remove duplicates

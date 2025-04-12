@@ -66,7 +66,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     }
     
     // Check if document is downloaded
-    if (_document != null && !_document.isDownloaded && widget.filePath == null) {
+    if (!_document.isDownloaded && widget.filePath == null) {
       setState(() {
         _hasError = true;
         _errorMessage = 'Document is not downloaded. Please download it first.';

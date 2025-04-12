@@ -38,7 +38,7 @@ class _MachineListScreenState extends State<MachineListScreen> {
         ),
         backgroundColor: costaRed,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: SafeArea(
         child: FutureBuilder<List<Machine>>(

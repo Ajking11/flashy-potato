@@ -121,40 +121,8 @@ class InputCard extends StatelessWidget {
 
         const SizedBox(height: 28),
 
-        // Find Filter Button
-        Container(
-        decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-    boxShadow: [
-    BoxShadow(
-    color: costaRed.withValues(alpha: 0.3),
-    blurRadius: 8,
-    offset: const Offset(0, 4),
-    ),
-    ],
-    ),
-    width: double.infinity,
-    child: ElevatedButton.icon(
-    onPressed: onSubmit,
-    icon: const Icon(Icons.search, color: Colors.white),
-    label: const Text(
-    'Find Filter',
-    style: TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-    ),
-    ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: costaRed,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-      ),
-    ),
-        ),
+        // Find Filter Button with pulse animation
+        _AnimatedFindFilterButton(onSubmit: onSubmit),
               ],
           ),
         ),
@@ -324,6 +292,97 @@ class InputCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Animated find filter button with pulse effect
+class _AnimatedFindFilterButton extends StatefulWidget {
+  final VoidCallback onSubmit;
+
+  const _AnimatedFindFilterButton({required this.onSubmit});
+
+  @override
+  State<_AnimatedFindFilterButton> createState() => _AnimatedFindFilterButtonState();
+}
+
+class _AnimatedFindFilterButtonState extends State<_AnimatedFindFilterButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: costaRed.withValues(alpha: _opacityAnimation.value * 0.3),
+                  blurRadius: 8 + (_animationController.value * 4),
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: widget.onSubmit,
+              icon: const Icon(Icons.search, color: Colors.white),
+              label: const Text(
+                'Find Filter',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: costaRed,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
             ),
           ),
         );

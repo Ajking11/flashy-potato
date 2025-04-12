@@ -85,7 +85,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
               ),
               backgroundColor: costaRed,
               elevation: 0,
-              centerTitle: true,
+              centerTitle: false,
               actions: [
                 // Toggle for offline documents
                 IconButton(
@@ -985,10 +985,10 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey,
             ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -997,10 +997,26 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
               // Start download
               Provider.of<DocumentProvider>(context, listen: false)
                   .downloadDocument(document.id)
-                  .then((_) {
-                // After download completes, navigate to viewer
-                if (mounted) {
+                  .then((_) async {
+                // Add a small delay to ensure file is completely written to disk
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                // After download completes, verify file exists before navigating
+                final docProvider = Provider.of<DocumentProvider>(context, listen: false);
+                final doc = docProvider.getDocumentById(document.id);
+                
+                if (doc != null && doc.isDownloaded && mounted) {
                   context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
+                } else {
+                  // Show error if document isn't available after download
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Document download completed but file is not accessible. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               }).catchError((error) {
                 // Show error message if download fails

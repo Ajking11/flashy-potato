@@ -107,7 +107,7 @@ class _MachineDetailScreenState extends State<MachineDetailScreen> with SingleTi
         ),
         backgroundColor: costaRed,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),

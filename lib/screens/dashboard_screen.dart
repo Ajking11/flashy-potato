@@ -168,16 +168,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       },
       {
-        'title': '\nSoftware',  // Changed from 'Technical' to 'Software'
-        'icon': Icons.usb_outlined,
+        'title': '\nSoftware',
+        'icon': Icons.system_update_outlined,
         'color': Colors.green,
         'onTap': () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Software feature coming soon'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          context.go('/software');
         },
       },
     ];
