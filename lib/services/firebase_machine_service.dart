@@ -4,7 +4,8 @@ import '../models/machine.dart';
 import '../models/machine_detail.dart';
 
 class FirebaseMachineService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // This will be used in future implementations for transactions and batched operations
+  // final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   // Collection references
   final CollectionReference _machinesCollection = 

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 // These imports will be uncommented when implementing real ZIP extraction and checksum verification
 // import 'package:archive/archive.dart';
 // import 'package:crypto/crypto.dart';
 import '../models/software.dart';
 import '../constants.dart';
 import '../models/machine.dart';
-import '../providers/software_provider.dart';
+import '../riverpod/notifiers/software_notifier.dart';
+import '../riverpod/notifiers/usb_transfer_notifier.dart';
+import '../riverpod/providers/usb_transfer_providers.dart';
+import '../riverpod/providers/software_providers.dart';
 
-class SoftwareDetailScreen extends StatelessWidget {
+class SoftwareDetailScreen extends ConsumerWidget {
   final Software software;
 
   const SoftwareDetailScreen({
@@ -19,7 +20,7 @@ class SoftwareDetailScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -321,33 +322,23 @@ class SoftwareDetailScreen extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              if (software.isDownloaded) {
-                // Show USB loading instructions dialog
-                _showUsbLoadingDialog(context, software);
-              } else {
-                // Download the software
-                Provider.of<SoftwareProvider>(context, listen: false)
-                    .downloadSoftware(software.id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Download started'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
+          child: Consumer(
+            builder: (context, widgetRef, _) {
+              final downloadProgress = widgetRef.watch(softwareDownloadProgressProvider(software.id));
+              final isDownloading = downloadProgress > 0;
+              
+              // Use AnimatedSwitcher for smooth transitions
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: _buildActionButton(context, software, isDownloading, downloadProgress),
+              );
             },
-            icon: Icon(software.isDownloaded ? Icons.usb : Icons.download),
-            label: Text(software.isDownloaded ? 'Load Software to USB' : 'Download Software'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: software.isDownloaded ? Colors.blue : costaRed,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
           ),
         ),
       ),
@@ -386,14 +377,14 @@ class SoftwareDetailScreen extends StatelessWidget {
         Container(
           width: 24,
           height: 24,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.blue,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               number.toString(),
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -487,21 +478,115 @@ class SoftwareDetailScreen extends StatelessWidget {
     }
   }
   
-  // Shows an interactive USB loading wizard
+  // Build the dynamic action button
+  Widget _buildActionButton(BuildContext context, Software software, bool isDownloading, double downloadProgress) {
+    // If software is already downloaded, show transfer button
+    if (software.isDownloaded) {
+      return ElevatedButton.icon(
+        key: const ValueKey('transfer_button'),
+        onPressed: () {
+          // Show USB loading instructions dialog
+          _showUsbLoadingDialog(context, software);
+        },
+        icon: const Icon(Icons.save_alt),
+        label: const Text('Transfer Software to Device'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+      );
+    }
+    // If software is currently downloading, show progress button
+    else if (isDownloading) {
+      return Container(
+        key: const ValueKey('progress_button'),
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Progress text
+            Text(
+              'Downloading: ${(downloadProgress * 100).toInt()}%',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Progress indicator
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LinearProgressIndicator(
+                value: downloadProgress,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // If software is not downloaded and not downloading, show download button
+    else {
+      return Consumer(
+        builder: (context, consumerRef, _) {
+          return ElevatedButton.icon(
+            key: const ValueKey('download_button'),
+            onPressed: () {
+              // Start download
+              consumerRef.read(softwareNotifierProvider.notifier)
+                  .downloadSoftware(software.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Download started'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 1), // Shorter duration for smoother experience
+                ),
+              );
+            },
+            icon: const Icon(Icons.download),
+            label: const Text('Download Software'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: costaRed,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+          );
+        }
+      );
+    }
+  }
+  
+  // Shows an interactive USB loading wizard using Riverpod for state management
   void _showUsbLoadingDialog(BuildContext context, Software software) {
-    // In a real implementation, we would have stateful class for this wizard
-    // For this demo, we'll use a stateful builder to manage state within the dialog
-    
+    // Launch the USB transfer wizard with the software
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => UsbTransferWizard(software: software),
+        builder: (context) => ProviderScope(
+          // No need for explicit overrides since we're passing the software ID
+          // as a parameter to the provider inside the UsbTransferWizard
+          child: UsbTransferWizard(software: software),
+        ),
       ),
     );
   }
 }
 
-// New USB Transfer Wizard Screen
-class UsbTransferWizard extends StatefulWidget {
+// USB Transfer Wizard Screen with Riverpod
+class UsbTransferWizard extends ConsumerWidget {
   final Software software;
   
   const UsbTransferWizard({
@@ -510,332 +595,18 @@ class UsbTransferWizard extends StatefulWidget {
   });
 
   @override
-  State<UsbTransferWizard> createState() => _UsbTransferWizardState();
-}
-
-class _UsbTransferWizardState extends State<UsbTransferWizard> {
-  // Wizard state
-  int _currentStep = 0;
-  bool _usbDetected = false;
-  bool _transferStarted = false;
-  bool _transferComplete = false;
-  double _transferProgress = 0.0;
-  String _transferStatus = '';
-  
-  // For actual file operations
-  String? _usbMountPath;
-  String? _outputPath;
-  String? _sourcePath;
-  
-  @override
-  void initState() {
-    super.initState();
-    // Initialize by finding the source file path
-    _getSourceFilePath();
-  }
-  
-  // Get the source file path from app's document directory
-  Future<void> _getSourceFilePath() async {
-    try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      
-      // Construct the source path from app documents directory and software ID
-      // Typically we would use the exact file path from the Software model
-      _sourcePath = '${appDocDir.path}/${widget.software.id}${_getFileExtension(widget.software.filePath)}';
-      
-      // Check if file exists
-      final file = File(_sourcePath!);
-      final exists = await file.exists();
-      
-      if (!exists) {
-        // If not found with extension, try without extension
-        _sourcePath = '${appDocDir.path}/${widget.software.id}';
-        final basicFile = File(_sourcePath!);
-        if (!await basicFile.exists()) {
-          // File doesn't exist - this is critical
-          setState(() {
-            _transferStatus = 'Error: Source file not found. Please redownload the software.';
-          });
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _transferStatus = 'Error finding source file: $e';
-      });
-    }
-  }
-  
-  // Extract file extension from path
-  String _getFileExtension(String path) {
-    final Uri uri = Uri.parse(path);
-    final String fileName = uri.pathSegments.last;
-    final int dotIndex = fileName.lastIndexOf('.');
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the state through utility providers for granular rebuilds
+    final currentStep = ref.watch(currentStepProvider(software.id));
+    final isUsbDetected = ref.watch(isUsbDetectedProvider(software.id));
+    final isTransferStarted = ref.watch(isTransferStartedProvider(software.id));
+    final isTransferComplete = ref.watch(isTransferCompleteProvider(software.id));
+    final transferProgress = ref.watch(transferProgressProvider(software.id));
+    // Note: no longer using individual transferStatus as we're using comprehensive statusInfo
     
-    if (dotIndex != -1 && dotIndex < fileName.length - 1) {
-      return fileName.substring(dotIndex);
-    }
+    // Get the notifier to modify state
+    final notifier = ref.read(usbTransferNotifierProvider(software.id).notifier);
     
-    return '';
-  }
-  
-  // USB detection logic
-  void _detectUsb() {
-    // Reset any previous transfer state
-    setState(() {
-      _transferStarted = false;
-      _transferComplete = false;
-      _transferProgress = 0.0;
-      _transferStatus = 'Searching for USB devices...';
-    });
-    
-    // In a real implementation, we would:
-    // 1. Request permission to access external storage
-    // 2. Scan for mounted USB drives (platform-specific code)
-    // 3. Update UI when found
-    
-    // For Android, we would typically use:
-    // - StorageManager to find USB drives
-    // - USBManager for direct USB access
-    // - REQUEST_USB_PERMISSION intent
-    
-    // Since this is platform-specific and requires native code,
-    // and we can't actually detect a real USB drive in this environment,
-    // we'll show a realistic "no USB detected" state:
-    Future.delayed(const Duration(milliseconds: 1500), () async {
-      try {
-        // In a real implementation we would actually check for USB devices
-        // For this demo, we'll always show the "no USB detected" state
-        
-        // Try to get external storage directory 
-        final externalDir = await getExternalStorageDirectory();
-        
-        // In a real app, we would check if externalDir is available and do USB detection
-        // But for this demo version, we always show the "No USB detected" state
-        {
-          // No USB drive detected - this is the most realistic scenario
-          setState(() {
-            _usbDetected = false;
-            _transferStatus = 'No USB drive detected. Please connect a USB drive and try again.';
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _transferStatus = 'Error detecting USB: $e';
-        });
-      }
-    });
-  }
-  
-  // Actual file copying operation
-  Future<void> _startTransfer() async {
-    if (!_usbDetected || _sourcePath == null || _outputPath == null) {
-      setState(() {
-        _transferStatus = 'Error: USB drive not ready or source file not found';
-      });
-      return;
-    }
-    
-    setState(() {
-      _transferStarted = true;
-      _transferProgress = 0.05;
-      _transferStatus = 'Preparing software package...';
-    });
-    
-    try {
-      // Step 1: Check source file
-      final sourceFile = File(_sourcePath!);
-      if (!await sourceFile.exists()) {
-        setState(() {
-          _transferProgress = 0;
-          _transferStatus = 'Error: Source file not found';
-        });
-        return;
-      }
-      
-      // Update progress
-      setState(() {
-        _transferProgress = 0.1;
-        _transferStatus = 'Reading source file...';
-      });
-      
-      // Step 2: Read source file (needed to track progress)
-      final fileBytes = await sourceFile.readAsBytes();
-      
-      setState(() {
-        _transferProgress = 0.25;
-        _transferStatus = 'Extracting software files...';
-      });
-      
-      // Step 3: If it's a ZIP file, extract it (real implementation)
-      final String fileExt = _getFileExtension(_sourcePath!).toLowerCase();
-      if (fileExt == '.zip') {
-        // For ZIP extraction, we'd use a package like archive
-        // This would be real extraction code:
-        // 
-        // final bytes = await sourceFile.readAsBytes();
-        // final archive = ZipDecoder().decodeBytes(bytes);
-        // 
-        // for (final file in archive) {
-        //   if (file.isFile) {
-        //     final outFile = File('${_outputPath!}/${file.name}');
-        //     await outFile.create(recursive: true);
-        //     await outFile.writeAsBytes(file.content);
-        //   }
-        // }
-        
-        // Since we don't have the full ZIP implementation right now, 
-        // we'll just wait a moment to simulate extraction
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-      
-      // Step 4: Verify file integrity (SHA256 check) - real implementation
-      setState(() {
-        _transferProgress = 0.5;
-        _transferStatus = 'Verifying package integrity...';
-      });
-      
-      if (widget.software.sha256FileHash != null && widget.software.sha256FileHash!.isNotEmpty) {
-        // This would be real verification code:
-        // 
-        // final digest = sha256.convert(fileBytes);
-        // final computedHash = digest.toString();
-        // 
-        // if (computedHash != widget.software.sha256FileHash) {
-        //   setState(() {
-        //     _transferProgress = 0;
-        //     _transferStatus = 'Error: File integrity check failed';
-        //   });
-        //   return;
-        // }
-        
-        // Simulating verification for now
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-      
-      // Step 5: Copy or extract files to destination - REAL IMPLEMENTATION
-      setState(() {
-        _transferProgress = 0.6;
-        _transferStatus = 'Copying files to USB drive...';
-      });
-      
-      // Check if it's a ZIP file that needs to be extracted to the root
-      final fileName = widget.software.filePath.split('/').last;
-      // We already got fileExt earlier, no need to redefine it
-      
-      if (fileExt == '.zip') {
-        setState(() {
-          _transferStatus = 'Extracting ZIP contents to USB root...';
-        });
-        
-        // In a real implementation, we would extract the ZIP contents directly to USB root:
-        // 
-        // import 'package:archive/archive.dart';
-        // final bytes = fileBytes;
-        // final archive = ZipDecoder().decodeBytes(bytes);
-        // 
-        // int totalFiles = archive.files.where((file) => file.isFile).length;
-        // int filesExtracted = 0;
-        //
-        // for (final file in archive) {
-        //   if (file.isFile) {
-        //     final outFile = File('${_usbMountPath}/${file.name}');
-        //     await outFile.create(recursive: true);
-        //     await outFile.writeAsBytes(file.content);
-        //     filesExtracted++;
-        //     
-        //     // Update progress
-        //     setState(() {
-        //       _transferProgress = 0.6 + ((filesExtracted / totalFiles) * 0.3);
-        //       _transferStatus = 'Extracting ${file.name} to USB (${(filesExtracted / totalFiles * 100).toInt()}%)...';
-        //     });
-        //   }
-        // }
-        
-        // Since we don't have the archive package yet, we'll just copy the ZIP file directly
-        // to the root as a backup solution
-        _outputPath = '$_usbMountPath/$fileName';
-      } else {
-        // For non-ZIP files, copy directly to the root of the USB
-        _outputPath = '$_usbMountPath/$fileName';
-      }
-      
-      // Copy the file to the USB root (either the ZIP file or the non-ZIP file)
-      final outputFile = File(_outputPath!);
-      
-      // Create a new file at the destination, overwriting if necessary
-      if (await outputFile.exists()) {
-        await outputFile.delete();
-      }
-      
-      // Stream copy with progress tracking
-      final outputStream = outputFile.openWrite();
-      int bytesCopied = 0;
-      final totalBytes = fileBytes.length;
-      
-      // Copy in chunks to update progress
-      const chunkSize = 1024 * 64; // 64KB chunks
-      for (var i = 0; i < totalBytes; i += chunkSize) {
-        final end = (i + chunkSize > totalBytes) ? totalBytes : i + chunkSize;
-        final chunk = fileBytes.sublist(i, end);
-        outputStream.add(chunk);
-        bytesCopied += chunk.length;
-        
-        final progress = bytesCopied / totalBytes;
-        setState(() {
-          // Scale progress from 60% to 90%
-          _transferProgress = 0.6 + (progress * 0.3);
-          _transferStatus = 'Copying $fileName to USB (${(progress * 100).toInt()}%)...';
-        });
-        
-        // Small delay to allow UI to update
-        await Future.delayed(const Duration(milliseconds: 5));
-      }
-      
-      await outputStream.flush();
-      await outputStream.close();
-      
-      // Step 6: Finalizing
-      setState(() {
-        _transferProgress = 0.95;
-        _transferStatus = 'Finalizing...';
-      });
-      
-      // Add a readme file with instructions - directly to USB root
-      final readmeFile = File('$_usbMountPath/README.txt');
-      final readmeContent = '''
-COSTA COFFEE SOFTWARE PACKAGE
------------------------------
-Software: ${widget.software.name}
-Version: ${widget.software.version}
-Date: ${DateTime.now().toString().substring(0, 10)}
-
-INSTALLATION INSTRUCTIONS:
-1. Insert this USB drive into the machine's USB port
-2. Navigate to the software installation menu
-3. Select the file $fileName
-${widget.software.password != null && widget.software.password!.isNotEmpty 
-  ? '4. When prompted, enter password: ${widget.software.password}' 
-  : ''}
-
-For support, contact Costa Technical Support.
-''';
-      await readmeFile.writeAsString(readmeContent);
-      
-      // Finally mark as complete
-      setState(() {
-        _transferProgress = 1.0;
-        _transferComplete = true;
-        _transferStatus = 'Transfer complete!';
-      });
-    } catch (e) {
-      setState(() {
-        _transferStatus = 'Error during transfer: $e';
-      });
-    }
-  }
-  
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('USB Transfer Wizard'),
@@ -845,7 +616,7 @@ For support, contact Costa Technical Support.
           icon: const Icon(Icons.close),
           onPressed: () {
             // Show confirmation dialog if transfer is in progress
-            if (_transferStarted && !_transferComplete) {
+            if (isTransferStarted && !isTransferComplete) {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -877,38 +648,44 @@ For support, contact Costa Technical Support.
         ),
       ),
       body: Stepper(
-        currentStep: _currentStep,
+        currentStep: currentStep,
         onStepContinue: () {
-          // Handle step-specific actions
-          if (_currentStep == 0) {
-            // Moving from first to second step, detect USB first
-            setState(() {
-              _detectUsb();
-              _currentStep += 1;  // Always go to USB detection step
-            });
-          } else if (_currentStep == 1) {
+          // Handle step-specific actions with improved async management
+          if (currentStep == 0) {
+            // First, move to next step
+            notifier.nextStep();
+            // Then start USB detection (prevents race conditions)
+            Future.microtask(() => notifier.detectUsb());
+          } else if (currentStep == 1) {
             // We're at the USB detection step
-            if (_usbDetected) {
-              // USB detected, start transfer and go to next step
-              setState(() {
-                _startTransfer();
-                _currentStep += 1;
-              });
+            if (isUsbDetected) {
+              // USB detected, first go to transfer step
+              notifier.nextStep();
+              // Then start transfer on the next frame to avoid state update conflicts
+              Future.microtask(() => notifier.startTransfer());
             } else {
-              // No USB detected, retry detection but stay on the same step
-              _detectUsb();
+              // First retry detection
+              notifier.detectUsb();
+              
+              // For demo purposes only with improved async handling
+              // In a real app, you'd rely on actual detection
+              Future.microtask(() {
+                // Delay detection for realistic simulation, but use microtask to avoid
+                // concurrent state modifications
+                Future.delayed(const Duration(milliseconds: 2000), () {
+                  notifier.simulateUsbDetected();
+                });
+              });
             }
-          } else if (_currentStep == 2 && _transferComplete) {
-            // Done with transfer, we can close the wizard
+          } else if (currentStep == 2 && isTransferComplete) {
+            // Done with transfer, can close the wizard
             Navigator.pop(context);
           }
         },
         onStepCancel: () {
-          setState(() {
-            if (_currentStep > 0) {
-              _currentStep -= 1;
-            }
-          });
+          if (currentStep > 0) {
+            notifier.previousStep();
+          }
         },
         controlsBuilder: (context, details) {
           // Custom controls based on current step
@@ -918,11 +695,11 @@ For support, contact Costa Technical Support.
           // Button text varies by step
           String continueText = 'Continue';
           if (details.currentStep == 0) {
-            continueText = 'Connect USB Drive';
+            continueText = 'Select Storage Location';
           } else if (details.currentStep == 1) {
-            continueText = _usbDetected ? 'Start Transfer' : 'Retry Detection';
+            continueText = isUsbDetected ? 'Start Transfer' : 'Select Location';
           } else if (details.currentStep == 2) {
-            continueText = _transferComplete ? 'Finish' : 'Transferring...';
+            continueText = isTransferComplete ? 'Finish' : 'Transferring...';
           }
           
           return Padding(
@@ -930,7 +707,7 @@ For support, contact Costa Technical Support.
             child: Row(
               children: [
                 ElevatedButton(
-                  onPressed: (details.currentStep == 2 && !_transferComplete) ? null : details.onStepContinue,
+                  onPressed: (details.currentStep == 2 && !isTransferComplete) ? null : details.onStepContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -955,13 +732,13 @@ For support, contact Costa Technical Support.
         steps: [
           // Step 1: Introduction
           Step(
-            title: const Text('Prepare USB Drive'),
-            subtitle: const Text('Get your USB drive ready'),
+            title: const Text('Prepare External Storage'),
+            subtitle: const Text('Get your storage device ready'),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'This wizard will help you transfer the software package to a USB drive.',
+                  'This wizard will help you transfer the software package to external storage or USB drive.',
                   style: TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 12),
@@ -979,13 +756,13 @@ For support, contact Costa Technical Support.
                       Row(
                         children: [
                           Icon(
-                            _getCategoryIcon(widget.software.category),
-                            color: _getCategoryColor(widget.software.category),
+                            _getCategoryIcon(software.category),
+                            color: _getCategoryColor(software.category),
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            widget.software.name,
+                            software.name,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -999,7 +776,7 @@ For support, contact Costa Technical Support.
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'v${widget.software.version}',
+                              'v${software.version}',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -1011,7 +788,7 @@ For support, contact Costa Technical Support.
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Size: ${widget.software.fileSizeKB} KB',
+                        'Size: ${software.fileSizeKB} KB',
                         style: const TextStyle(fontSize: 14),
                       ),
                     ],
@@ -1033,25 +810,25 @@ For support, contact Costa Technical Support.
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      _buildCheckItem('Make sure your USB drive is formatted as FAT32', true),
-                      _buildCheckItem('USB drive should have at least 1GB of free space', true),
-                      _buildCheckItem('Prepare to connect the USB drive to your device', false),
+                      _buildCheckItem('Connect your USB drive or prepare external storage', true),
+                      _buildCheckItem('Storage should have at least 1GB of free space', true),
+                      _buildCheckItem('You may need a USB OTG adapter for mobile devices', false),
                     ],
                   ),
                 ),
               ],
             ),
-            isActive: _currentStep == 0,
+            isActive: currentStep == 0,
           ),
           
-          // Step 2: Connect USB
+          // Step 2: Select Storage Location (formerly Connect USB)
           Step(
-            title: const Text('Connect USB Drive'),
-            subtitle: Text(_usbDetected ? 'USB drive detected' : 'Waiting for USB drive'),
+            title: const Text('Select Storage Location'),
+            subtitle: Text(isUsbDetected ? 'Location selected' : 'Select a location'),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // USB detection animation or status
+                // Storage selection animation or status
                 Container(
                   height: 120,
                   width: double.infinity,
@@ -1064,63 +841,65 @@ For support, contact Costa Technical Support.
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _usbDetected ? Icons.usb : Icons.usb_off,
+                        isUsbDetected ? Icons.folder : Icons.folder_open,
                         size: 48,
-                        color: _usbDetected ? Colors.green : Colors.grey,
+                        color: isUsbDetected ? Colors.green : Colors.blue,
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _usbDetected 
-                            ? 'USB Drive Connected' 
-                            : 'Please connect your USB drive',
+                        isUsbDetected 
+                            ? 'Storage Location Selected' 
+                            : 'Select a USB drive or folder',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: _usbDetected ? Colors.green : Colors.grey.shade700,
+                          color: isUsbDetected ? Colors.green : Colors.blue.shade700,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                // USB connection instructions
-                if (!_usbDetected)
+                // Storage selection instructions
+                if (!isUsbDetected)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.shade200),
+                      border: Border.all(color: Colors.blue.shade200),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.orange.shade800),
+                            Icon(Icons.info_outline, color: Colors.blue.shade800),
                             const SizedBox(width: 8),
                             const Text(
-                              'USB Connection Requirements:',
+                              'External Storage Access:',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          '• You need a USB OTG adapter to connect USB drives to your phone'),
+                          '• Connect your USB drive to your device (using OTG adapter if needed)'),
                         const Text(
-                          '• The USB drive should be formatted as FAT32'),
+                          '• You\'ll be asked to select the destination folder'),
                         const Text(
-                          '• After connecting, you may need to grant permission in the popup'),
+                          '• Navigate to your USB drive in the file picker'),
+                        const Text(
+                          '• Grant permissions if prompted'),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade800, size: 16),
+                            Icon(Icons.touch_app, color: Colors.blue.shade800, size: 16),
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
-                                'No USB drive detected. Connect a drive and tap "Retry".',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                'Tap "Continue" to open the storage selection dialog.',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -1128,104 +907,178 @@ For support, contact Costa Technical Support.
                       ],
                     ),
                   ),
-                if (_usbDetected)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                if (isUsbDetected)
+                  Builder(
+                    builder: (context) {
+                      // Watch for USB display name from state
+                      final usbDisplayName = ref.watch(
+                        usbTransferNotifierProvider(software.id).select((state) => state.usbDisplayName)
+                      );
+                      final mountPath = ref.watch(
+                        usbTransferNotifierProvider(software.id).select((state) => state.usbMountPath)
+                      );
+                      
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade800),
-                            const SizedBox(width: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green.shade800),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Selected Storage Location:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Name: ${usbDisplayName ?? "External Storage"}'),
+                            if (mountPath != null)
+                              Text(
+                                'Path: ${mountPath.length > 40 ? "${mountPath.substring(0, 37)}..." : mountPath}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            const SizedBox(height: 8),
                             const Text(
-                              'USB Drive Details:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              'Ready to transfer files to the selected location.',
+                              style: TextStyle(fontStyle: FontStyle.italic),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        const Text('Name: USB DRIVE'),
-                        const Text('Free Space: 14.5 GB'),
-                        const Text('Format: FAT32'),
-                      ],
-                    ),
+                      );
+                    },
                   ),
               ],
             ),
-            isActive: _currentStep == 1,
-            state: _usbDetected ? StepState.complete : StepState.indexed,
+            isActive: currentStep == 1,
+            state: isUsbDetected ? StepState.complete : StepState.indexed,
           ),
           
-          // Step 3: Transfer Files
+          // Step 3: Transfer Files with improved error handling
           Step(
             title: const Text('Transfer Software'),
-            subtitle: Text(_transferComplete ? 'Completed' : 'Ready to transfer'),
+            subtitle: Text(isTransferComplete ? 'Completed' : 'Ready to transfer'),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Transfer status
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _transferComplete ? Colors.green.shade50 : Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _transferComplete ? Colors.green.shade200 : Colors.blue.shade200
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                // Enhanced transfer status with better error handling
+                Builder(
+                  builder: (context) {
+                    // Get comprehensive status info with a single watch
+                    final statusInfo = ref.watch(transferStatusInfoProvider(software.id));
+                    final hasError = statusInfo['hasError'] as bool;
+                    final isComplete = statusInfo['isComplete'] as bool;
+                    final displayColor = statusInfo['displayColor'] as Color;
+                    final iconData = statusInfo['icon'] as IconData;
+                    final statusText = statusInfo['status'] as String;
+                    final errorDetails = statusInfo['error'] as String?;
+                    
+                    // Determine background and border colors based on state
+                    final bgColor = hasError ? Colors.red.shade50 : 
+                                   (isComplete ? Colors.green.shade50 : Colors.blue.shade50);
+                    final borderColor = hasError ? Colors.red.shade200 : 
+                                       (isComplete ? Colors.green.shade200 : Colors.blue.shade200);
+                    
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            _transferComplete ? Icons.check_circle : Icons.sync,
-                            color: _transferComplete ? Colors.green : Colors.blue,
+                          Row(
+                            children: [
+                              Icon(iconData, color: displayColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: displayColor.withAlpha(200),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _transferStatus,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _transferComplete ? Colors.green.shade700 : Colors.blue.shade700,
+                          
+                          // Show error details if available
+                          if (hasError && errorDetails != null && errorDetails.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Error details: $errorDetails',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.red.shade800,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
-                          ),
+                          ],
+                          
+                          // Only show progress indicators if there's no error
+                          if (!hasError) ...[
+                            const SizedBox(height: 16),
+                            // Progress bar
+                            LinearProgressIndicator(
+                              value: transferProgress,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(displayColor),
+                            ),
+                            const SizedBox(height: 8),
+                            // Progress percentage
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '${(transferProgress * 100).toInt()}%',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: displayColor.withAlpha(200),
+                                ),
+                              ),
+                            ),
+                          ],
+                          
+                          // Show retry button on error
+                          if (hasError) ...[
+                            const SizedBox(height: 16),
+                            Center(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  if (currentStep == 1) {
+                                    notifier.detectUsb();
+                                  } else {
+                                    notifier.startTransfer();
+                                  }
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      // Progress bar
-                      LinearProgressIndicator(
-                        value: _transferProgress,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _transferComplete ? Colors.green : Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Progress percentage
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${(_transferProgress * 100).toInt()}%',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _transferComplete ? Colors.green.shade700 : Colors.blue.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
+                
                 const SizedBox(height: 16),
                 
                 // Transfer details or completion message
-                if (_transferComplete)
+                if (isTransferComplete)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1244,7 +1097,7 @@ For support, contact Costa Technical Support.
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text('Package: ${widget.software.name} v${widget.software.version}'),
+                        Text('Package: ${software.name} v${software.version}'),
                         const Text('Location: USB DRIVE (root directory)'),
                         const SizedBox(height: 8),
                         Text.rich(
@@ -1255,7 +1108,7 @@ For support, contact Costa Technical Support.
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               TextSpan(
-                                text: widget.software.filePath.split('/').last,
+                                text: software.filePath.split('/').last,
                                 style: const TextStyle(fontFamily: 'monospace'),
                               ),
                               const TextSpan(text: ', README.txt')
@@ -1271,7 +1124,7 @@ For support, contact Costa Technical Support.
                       ],
                     ),
                   ),
-                if (_transferStarted && !_transferComplete)
+                if (isTransferStarted && !isTransferComplete && !ref.watch(hasTransferErrorProvider(software.id)))
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1290,14 +1143,14 @@ For support, contact Costa Technical Support.
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildProcessStep('Extracting package files', _transferProgress >= 0.25),
-                        _buildProcessStep('Verifying package integrity', _transferProgress >= 0.5),
-                        _buildProcessStep('Copying to USB drive', _transferProgress >= 0.9),
-                        _buildProcessStep('Finalizing', _transferProgress >= 1.0),
+                        _buildProcessStep('Preparing file for transfer', transferProgress >= 0.25),
+                        _buildProcessStep('Verifying package integrity', transferProgress >= 0.4),
+                        _buildProcessStep('Saving to selected location', transferProgress >= 0.7),
+                        _buildProcessStep('Finalizing transfer', transferProgress >= 1.0),
                       ],
                     ),
                   ),
-                if (!_transferStarted)
+                if (!isTransferStarted)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1316,12 +1169,19 @@ For support, contact Costa Technical Support.
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text('Package: ${widget.software.name} v${widget.software.version}'),
-                        Text('Size: ${widget.software.fileSizeKB} KB'),
-                        const Text('Destination: USB DRIVE/costa_software/'),
+                        Text('Package: ${software.name} v${software.version}'),
+                        Text('Size: ${software.fileSizeKB} KB'),
+                        Builder(
+                          builder: (context) {
+                            final usbDisplayName = ref.watch(
+                              usbTransferNotifierProvider(software.id).select((state) => state.usbDisplayName)
+                            );
+                            return Text('Destination: ${usbDisplayName ?? "Selected Storage Location"}');
+                          }
+                        ),
                         const SizedBox(height: 12),
                         const Text(
-                          'Click "Start Transfer" to begin copying files to the USB drive.',
+                          'Click "Start Transfer" to begin copying files to the selected location.',
                           style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ],
@@ -1329,7 +1189,7 @@ For support, contact Costa Technical Support.
                   ),
                   
                 // Password reminder if applicable
-                if (widget.software.password != null && widget.software.password!.isNotEmpty) ...[
+                if (software.password != null && software.password!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -1370,7 +1230,7 @@ For support, contact Costa Technical Support.
                             border: Border.all(color: Colors.orange.shade300),
                           ),
                           child: Text(
-                            widget.software.password!,
+                            software.password!,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
@@ -1384,13 +1244,15 @@ For support, contact Costa Technical Support.
                 ],
               ],
             ),
-            isActive: _currentStep == 2,
-            state: _transferComplete ? StepState.complete : StepState.indexed,
+            isActive: currentStep == 2,
+            state: isTransferComplete ? StepState.complete : StepState.indexed,
           ),
         ],
       ),
     );
   }
+  
+  // Helper methods moved to static methods or widget methods
   
   // Helper method to build a checklist item
   Widget _buildCheckItem(String text, bool checked) {

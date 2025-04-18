@@ -1,14 +1,10 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'providers/filter_provider.dart';
-import 'providers/document_provider.dart';
-import 'providers/preferences_provider.dart';
-import 'providers/software_provider.dart';
 import 'constants.dart';
+import 'services/permissions_service.dart';
 import 'services/theme_service.dart';
 import 'navigation/app_router.dart';
 
@@ -20,62 +16,85 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+/// Provider to track permissions intro state
+final permissionIntroProvider = StateProvider<bool>((ref) => false);
+
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  bool _isLoading = true;
+  bool _hasSeenPermissionIntro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissionIntroStatus();
+  }
+
+  Future<void> _checkPermissionIntroStatus() async {
+    try {
+      final hasSeenIntro = await PermissionsService.hasSeenPermissionIntro();
+      
+      if (mounted) {
+        setState(() {
+          _hasSeenPermissionIntro = hasSeenIntro;
+          _isLoading = false;
+        });
+        
+        // Update the provider state
+        ref.read(permissionIntroProvider.notifier).state = hasSeenIntro;
+      }
+    } catch (e) {
+      // If there's an error, we'll assume the user hasn't seen the intro
+      if (mounted) {
+        setState(() {
+          _hasSeenPermissionIntro = false;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      future: Future.wait([
-        FilterProvider.initialize(),
-        DocumentProvider.initialize(),
-        PreferencesProvider.initialize(),
-        SoftwareProvider.initialize(),
-      ]),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          final filterProvider = snapshot.data?[0] as FilterProvider? ?? FilterProvider();
-          final documentProvider = snapshot.data?[1] as DocumentProvider? ?? DocumentProvider();
-          final preferencesProvider = snapshot.data?[2] as PreferencesProvider? ?? PreferencesProvider();
-          final softwareProvider = snapshot.data?[3] as SoftwareProvider? ?? SoftwareProvider();
-          
-          return MultiProvider(
-            providers: [
-              ChangeNotifierProvider<FilterProvider>.value(
-                value: filterProvider,
-              ),
-              ChangeNotifierProvider<DocumentProvider>.value(
-                value: documentProvider,
-              ),
-              ChangeNotifierProvider<PreferencesProvider>.value(
-                value: preferencesProvider,
-              ),
-              ChangeNotifierProvider<SoftwareProvider>.value(
-                value: softwareProvider,
-              ),
-            ],
-            child: Consumer<PreferencesProvider>(
-              builder: (context, prefsProvider, child) {
-                return MaterialApp.router(
-                  title: 'Costa Coffee FSE Toolbox',
-                  theme: ThemeService.getLightTheme(),
-                  debugShowCheckedModeBanner: true,
-                  routerConfig: AppRouter.router,
-                );
-              },
-            ),
-          );
-        } else {
-          // Return a loading screen while initializing
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: SplashScreen(),
-          );
+    // Show splash screen while checking permissions status
+    if (_isLoading) {
+      return MaterialApp(
+        title: 'Costa Coffee FSE Toolbox',
+        theme: ThemeService.getLightTheme(),
+        debugShowCheckedModeBanner: true,
+        home: const SplashScreen(),
+      );
+    }
+
+    // Redirect to permissions intro if needed
+    if (!_hasSeenPermissionIntro) {
+      // Delayed redirect to permissions intro to avoid router conflicts
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          // Override the initial location
+          AppRouter.router.go('/permissions');
         }
-      },
+      });
+    }
+
+    return MaterialApp.router(
+      title: 'Costa Coffee FSE Toolbox',
+      theme: ThemeService.getLightTheme(),
+      debugShowCheckedModeBanner: true,
+      routerConfig: AppRouter.router,
     );
   }
 }

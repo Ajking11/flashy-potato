@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/document.dart';
 import '../models/machine.dart';
-import '../providers/document_provider.dart';
+import '../riverpod/notifiers/document_notifier.dart';
+import '../riverpod/providers/document_providers.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
 
-class DocumentRepositoryScreen extends StatefulWidget {
+class DocumentRepositoryScreen extends ConsumerStatefulWidget {
   final String? initialMachineId; // Optional: to pre-filter by machine
 
   const DocumentRepositoryScreen({
@@ -16,10 +17,10 @@ class DocumentRepositoryScreen extends StatefulWidget {
   });
 
   @override
-  State<DocumentRepositoryScreen> createState() => _DocumentRepositoryScreenState();
+  ConsumerState<DocumentRepositoryScreen> createState() => _DocumentRepositoryScreenState();
 }
 
-class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
+class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _showOnlyDownloaded = false;
@@ -30,7 +31,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
     // If initial machine ID is provided, apply the filter
     if (widget.initialMachineId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<DocumentProvider>(context, listen: false)
+        ref.read(documentNotifierProvider.notifier)
             .filterByMachine(widget.initialMachineId);
       });
     }
@@ -143,7 +144,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                     icon: const Icon(Icons.clear, color: Colors.grey),
                     onPressed: () {
                       _searchController.clear();
-                      Provider.of<DocumentProvider>(context, listen: false)
+                      ref.read(documentNotifierProvider.notifier)
                           .setSearchQuery('');
                       _searchFocusNode.unfocus();
                     },
@@ -156,7 +157,7 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
             ),
           ),
           onChanged: (value) {
-            Provider.of<DocumentProvider>(context, listen: false)
+            ref.read(documentNotifierProvider.notifier)
                 .setSearchQuery(value);
           },
         ),
@@ -165,85 +166,81 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   Widget _buildFilterChips() {
-    return Consumer<DocumentProvider>(
-      builder: (context, documentProvider, child) {
-        final selectedMachineId = documentProvider.selectedMachineId;
-        final selectedCategory = documentProvider.selectedCategory;
-        final hasFilters = selectedMachineId != null || selectedCategory != null;
-        
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: latte,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final selectedMachineId = ref.watch(selectedMachineIdProvider);
+    final selectedCategory = ref.watch(selectedCategoryProvider);
+    final hasFilters = selectedMachineId != null || selectedCategory != null;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: latte,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Filter buttons row - connected with square inner edges
+          Row(
             children: [
-              // Filter buttons row - connected with square inner edges
-              Row(
-                children: [
-                  // Connected filter buttons taking full width
-                  Expanded(
-                    child: Row(
-                      children: [
-                        // Machine filter dropdown - only show if not pre-filtered
-                        if (widget.initialMachineId == null)
-                          Expanded(
-                            flex: 1,
-                            child: _buildFilterDropdown(
-                              label: 'Machines',  // Shortened label
-                              value: selectedMachineId == null 
-                                ? 'All' 
-                                : _getShortMachineName(selectedMachineId),
-                              icon: Icons.devices,
-                              onTap: () => _showMachineFilterSheet(context, documentProvider),
-                              isActive: selectedMachineId != null,
-                              isLeftButton: true,
-                            ),
-                          ),
-                        
-                        // Category filter dropdown
-                        Expanded(
-                          flex: 1,
-                          child: _buildFilterDropdown(
-                            label: 'Categories',  // Shortened label
-                            value: selectedCategory ?? 'All',
-                            icon: Icons.category,
-                            onTap: () => _showCategoryFilterSheet(context, documentProvider),
-                            isActive: selectedCategory != null,
-                            isRightButton: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Active filters display
-              if (hasFilters) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+              // Connected filter buttons taking full width
+              Expanded(
+                child: Row(
                   children: [
-                    if (selectedMachineId != null)
-                      _buildActiveFilterChip(
-                        _getMachineName(selectedMachineId),
-                        Icons.devices,
-                        () => documentProvider.filterByMachine(null),
+                    // Machine filter dropdown - only show if not pre-filtered
+                    if (widget.initialMachineId == null)
+                      Expanded(
+                        flex: 1,
+                        child: _buildFilterDropdown(
+                          label: 'Machines',  // Shortened label
+                          value: selectedMachineId == null 
+                            ? 'All' 
+                            : _getShortMachineName(selectedMachineId),
+                          icon: Icons.devices,
+                          onTap: () => _showMachineFilterSheet(context),
+                          isActive: selectedMachineId != null,
+                          isLeftButton: true,
+                        ),
                       ),
-                    if (selectedCategory != null)
-                      _buildActiveFilterChip(
-                        selectedCategory,
-                        _getCategoryIcon(selectedCategory),
-                        () => documentProvider.filterByCategory(null),
+                    
+                    // Category filter dropdown
+                    Expanded(
+                      flex: 1,
+                      child: _buildFilterDropdown(
+                        label: 'Categories',  // Shortened label
+                        value: selectedCategory ?? 'All',
+                        icon: Icons.category,
+                        onTap: () => _showCategoryFilterSheet(context),
+                        isActive: selectedCategory != null,
+                        isRightButton: true,
                       ),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ],
           ),
-        );
-      },
+          
+          // Active filters display
+          if (hasFilters) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (selectedMachineId != null)
+                  _buildActiveFilterChip(
+                    _getMachineName(selectedMachineId),
+                    Icons.devices,
+                    () => ref.read(documentNotifierProvider.notifier).filterByMachine(null),
+                  ),
+                if (selectedCategory != null)
+                  _buildActiveFilterChip(
+                    selectedCategory,
+                    _getCategoryIcon(selectedCategory),
+                    () => ref.read(documentNotifierProvider.notifier).filterByCategory(null),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -366,11 +363,9 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   // Show bottom sheet for machine filter selection
-  void _showMachineFilterSheet(
-    BuildContext context,
-    DocumentProvider documentProvider,
-  ) {
+  void _showMachineFilterSheet(BuildContext context) {
     final machines = getMachines();
+    final selectedMachineId = ref.read(selectedMachineIdProvider);
     
     showModalBottomSheet(
       context: context,
@@ -420,10 +415,10 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (documentProvider.selectedMachineId != null)
+                      if (selectedMachineId != null)
                         TextButton.icon(
                           onPressed: () {
-                            documentProvider.filterByMachine(null);
+                            ref.read(documentNotifierProvider.notifier).filterByMachine(null);
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.restart_alt, size: 16),
@@ -442,44 +437,54 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                 ),
                 
                 // All machines option
-                ListTile(
-                  leading: const Icon(
-                    Icons.device_hub,
-                    color: costaRed,
-                  ),
-                  title: const Text('All Machines'),
-                  selected: documentProvider.selectedMachineId == null,
-                  selectedTileColor: costaRed.withValues(alpha: 0.1),
-                  selectedColor: costaRed,
-                  onTap: () {
-                    documentProvider.filterByMachine(null);
-                    Navigator.pop(context);
-                  },
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentSelectedMachineId = ref.watch(selectedMachineIdProvider);
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.device_hub,
+                        color: costaRed,
+                      ),
+                      title: const Text('All Machines'),
+                      selected: currentSelectedMachineId == null,
+                      selectedTileColor: costaRed.withValues(alpha: 0.1),
+                      selectedColor: costaRed,
+                      onTap: () {
+                        ref.read(documentNotifierProvider.notifier).filterByMachine(null);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }
                 ),
                 
                 // Machine list
                 Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: machines.length,
-                    itemBuilder: (context, index) {
-                      final machine = machines[index];
-                      final isSelected = documentProvider.selectedMachineId == machine.machineId;
-                      
-                      return ListTile(
-                        leading: isSelected
-                          ? const Icon(Icons.check_circle, color: costaRed)
-                          : const Icon(Icons.coffee, color: Colors.brown),
-                        title: Text('${machine.manufacturer} ${machine.model}'),
-                        selected: isSelected,
-                        selectedTileColor: costaRed.withValues(alpha: 0.1),
-                        selectedColor: costaRed,
-                        onTap: () {
-                          documentProvider.filterByMachine(machine.machineId);
-                          Navigator.pop(context);
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final currentSelectedMachineId = ref.watch(selectedMachineIdProvider);
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: machines.length,
+                        itemBuilder: (context, index) {
+                          final machine = machines[index];
+                          final isSelected = currentSelectedMachineId == machine.machineId;
+                          
+                          return ListTile(
+                            leading: isSelected
+                              ? const Icon(Icons.check_circle, color: costaRed)
+                              : const Icon(Icons.coffee, color: Colors.brown),
+                            title: Text('${machine.manufacturer} ${machine.model}'),
+                            selected: isSelected,
+                            selectedTileColor: costaRed.withValues(alpha: 0.1),
+                            selectedColor: costaRed,
+                            onTap: () {
+                              ref.read(documentNotifierProvider.notifier).filterByMachine(machine.machineId);
+                              Navigator.pop(context);
+                            },
+                          );
                         },
                       );
-                    },
+                    }
                   ),
                 ),
               ],
@@ -491,11 +496,9 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   // Show bottom sheet for category filter selection
-  void _showCategoryFilterSheet(
-    BuildContext context,
-    DocumentProvider documentProvider,
-  ) {
+  void _showCategoryFilterSheet(BuildContext context) {
     final categories = DocumentCategory.getAllCategories();
+    final selectedCategory = ref.read(selectedCategoryProvider);
     
     showModalBottomSheet(
       context: context,
@@ -545,10 +548,10 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (documentProvider.selectedCategory != null)
+                      if (selectedCategory != null)
                         TextButton.icon(
                           onPressed: () {
-                            documentProvider.filterByCategory(null);
+                            ref.read(documentNotifierProvider.notifier).filterByCategory(null);
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.restart_alt, size: 16),
@@ -567,45 +570,55 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
                 ),
                 
                 // All categories option
-                ListTile(
-                  leading: const Icon(
-                    Icons.category,
-                    color: costaRed,
-                  ),
-                  title: const Text('All Categories'),
-                  selected: documentProvider.selectedCategory == null,
-                  selectedTileColor: costaRed.withValues(alpha: 0.1),
-                  selectedColor: costaRed,
-                  onTap: () {
-                    documentProvider.filterByCategory(null);
-                    Navigator.pop(context);
-                  },
+                Consumer(
+                  builder: (context, ref, _) {
+                    final currentSelectedCategory = ref.watch(selectedCategoryProvider);
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.category,
+                        color: costaRed,
+                      ),
+                      title: const Text('All Categories'),
+                      selected: currentSelectedCategory == null,
+                      selectedTileColor: costaRed.withValues(alpha: 0.1),
+                      selectedColor: costaRed,
+                      onTap: () {
+                        ref.read(documentNotifierProvider.notifier).filterByCategory(null);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }
                 ),
                 
                 // Category list
                 Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      final isSelected = documentProvider.selectedCategory == category;
-                      
-                      return ListTile(
-                        leading: Icon(
-                          _getCategoryIcon(category),
-                          color: isSelected ? costaRed : _getCategoryColor(category),
-                        ),
-                        title: Text(category),
-                        selected: isSelected,
-                        selectedTileColor: costaRed.withValues(alpha: 0.1),
-                        selectedColor: costaRed,
-                        onTap: () {
-                          documentProvider.filterByCategory(category);
-                          Navigator.pop(context);
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final currentSelectedCategory = ref.watch(selectedCategoryProvider);
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final isSelected = currentSelectedCategory == category;
+                          
+                          return ListTile(
+                            leading: Icon(
+                              _getCategoryIcon(category),
+                              color: isSelected ? costaRed : _getCategoryColor(category),
+                            ),
+                            title: Text(category),
+                            selected: isSelected,
+                            selectedTileColor: costaRed.withValues(alpha: 0.1),
+                            selectedColor: costaRed,
+                            onTap: () {
+                              ref.read(documentNotifierProvider.notifier).filterByCategory(category);
+                              Navigator.pop(context);
+                            },
+                          );
                         },
                       );
-                    },
+                    }
                   ),
                 ),
               ],
@@ -617,120 +630,117 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   Widget _buildDocumentList() {
-    return Consumer<DocumentProvider>(
-      builder: (context, documentProvider, child) {
-        if (documentProvider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+    final isLoading = ref.watch(isDocumentsLoadingProvider);
+    final allDocuments = ref.watch(filteredDocumentsProvider);
+    
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+        ),
+      );
+    }
+
+    // Apply offline filter if needed
+    final documents = _showOnlyDownloaded 
+        ? allDocuments.where((doc) => doc.isDownloaded).toList()
+        : allDocuments;
+
+    if (documents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.no_sim,
+              size: 64,
+              color: Colors.grey.shade400,
             ),
-          );
-        }
-
-        var documents = documentProvider.filteredDocuments;
-        
-        // Apply offline filter if needed
-        if (_showOnlyDownloaded) {
-          documents = documents.where((doc) => doc.isDownloaded).toList();
-        }
-
-        if (documents.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.no_sim,
-                  size: 64,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No documents found',
-                  style: CostaTextStyle.subtitle1.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Try changing your search or filters',
-                  style: CostaTextStyle.bodyText1.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                // Refresh button
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    documentProvider.refreshDocuments();
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh Documents'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: costaRed,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 16),
+            Text(
+              'No documents found',
+              style: CostaTextStyle.subtitle1.copyWith(
+                color: Colors.grey.shade600,
+              ),
             ),
-          );
-        }
+            const SizedBox(height: 8),
+            Text(
+              'Try changing your search or filters',
+              style: CostaTextStyle.bodyText1.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            // Refresh button
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.read(documentNotifierProvider.notifier).refreshDocuments();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Documents'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: costaRed,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-        // Use RefreshIndicator for pull-to-refresh functionality
-        return RefreshIndicator(
-          onRefresh: () => documentProvider.refreshDocuments(),
-          color: costaRed,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: documents.length + 1, // Add one for the Firebase indicator
-            itemBuilder: (context, index) {
-              // First item is the Firebase indicator
-              if (index == 0) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+    // Use RefreshIndicator for pull-to-refresh functionality
+    return RefreshIndicator(
+      onRefresh: () => ref.read(documentNotifierProvider.notifier).refreshDocuments(),
+      color: costaRed,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: documents.length + 1, // Add one for the Firebase indicator
+        itemBuilder: (context, index) {
+          // First item is the Firebase indicator
+          if (index == 0) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud, color: Colors.blue, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Documents from Firebase',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.cloud, color: Colors.blue, size: 18),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Documents from Firebase',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Pull to refresh',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  const Spacer(),
+                  Text(
+                    'Pull to refresh',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
                   ),
-                );
-              }
-              
-              // Adjust index to account for the Firebase indicator
-              final docIndex = index - 1;
-              final document = documents[docIndex];
-              
-              return FadeAnimation(
-                delay: Duration(milliseconds: 50 * docIndex),
-                child: _buildDocumentCard(document),
-              );
-            },
-          ),
-        );
-      },
+                ],
+              ),
+            );
+          }
+          
+          // Adjust index to account for the Firebase indicator
+          final docIndex = index - 1;
+          final document = documents[docIndex];
+          
+          return FadeAnimation(
+            delay: Duration(milliseconds: 50 * docIndex),
+            child: _buildDocumentCard(document),
+          );
+        },
+      ),
     );
   }
 
@@ -845,69 +855,96 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
   }
 
   Widget _buildDownloadButton(TechnicalDocument document) {
-    final documentProvider = Provider.of<DocumentProvider>(context, listen: true);
-    final isDownloading = documentProvider.isDownloading(document.id);
-    final downloadProgress = documentProvider.getDownloadProgress(document.id);
-    
+    return Consumer(
+      builder: (context, ref, _) {
+        final downloadProgress = ref.watch(documentDownloadProgressProvider(document.id));
+        final isDownloading = downloadProgress > 0;
+        
+        // Use AnimatedSwitcher for smooth transitions between button states
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: animation,
+                child: child,
+              ),
+            );
+          },
+          child: _buildDownloadButtonState(document, isDownloading, downloadProgress, ref),
+        );
+      }
+    );
+  }
+  
+  // Helper to build the appropriate button state
+  Widget _buildDownloadButtonState(TechnicalDocument document, bool isDownloading, double downloadProgress, WidgetRef ref) {
     // If document is downloaded, show remove button
     if (document.isDownloaded) {
       return TextButton.icon(
+        key: const ValueKey('remove_button'),
         onPressed: () {
-          Provider.of<DocumentProvider>(context, listen: false)
-              .removeDownload(document.id);
+          ref.read(documentNotifierProvider.notifier).removeDownload(document.id);
         },
         icon: const Icon(Icons.delete_outline, size: 16),
         label: const Text('Remove'),
         style: TextButton.styleFrom(
           foregroundColor: Colors.grey.shade700,
           padding: EdgeInsets.zero,
-          minimumSize: const Size(50, 30),
+          minimumSize: const Size(80, 30),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
     } 
     // If document is currently downloading, show progress
     else if (isDownloading) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Progress indicator
-          SizedBox(
-            width: 80,
-            height: 4,
-            child: LinearProgressIndicator(
-              value: downloadProgress,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+      return SizedBox(
+        key: const ValueKey('progress_indicator'),
+        width: 80,
+        height: 30, // Match height of buttons for smooth transition
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Progress indicator
+            SizedBox(
+              width: 80,
+              height: 4,
+              child: LinearProgressIndicator(
+                value: downloadProgress,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // Progress text
-          Text(
-            '${(downloadProgress * 100).toInt()}%',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
+            const SizedBox(height: 4),
+            // Progress text
+            Text(
+              '${(downloadProgress * 100).toInt()}%',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     } 
     // If document is not downloaded and not downloading, show download button
     else {
       return TextButton.icon(
+        key: const ValueKey('download_button'),
         onPressed: () {
           // Start download
-          Provider.of<DocumentProvider>(context, listen: false)
-              .downloadDocument(document.id);
+          ref.read(documentNotifierProvider.notifier).downloadDocument(document.id);
         },
         icon: const Icon(Icons.download_outlined, size: 16),
         label: const Text('Download'),
         style: TextButton.styleFrom(
           foregroundColor: costaRed,
           padding: EdgeInsets.zero,
-          minimumSize: const Size(50, 30),
+          minimumSize: const Size(80, 30),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
@@ -992,42 +1029,54 @@ class _DocumentRepositoryScreenState extends State<DocumentRepositoryScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              // Close dialog
-              Navigator.pop(context);
-              // Start download
-              Provider.of<DocumentProvider>(context, listen: false)
-                  .downloadDocument(document.id)
-                  .then((_) async {
-                // Add a small delay to ensure file is completely written to disk
-                await Future.delayed(const Duration(milliseconds: 500));
-                
-                // After download completes, verify file exists before navigating
-                final docProvider = Provider.of<DocumentProvider>(context, listen: false);
-                final doc = docProvider.getDocumentById(document.id);
-                
-                if (doc != null && doc.isDownloaded && mounted) {
-                  context.pushNamed('document-viewer', pathParameters: {'documentId': document.id});
-                } else {
-                  // Show error if document isn't available after download
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+              // Cache required objects before async operations
+              final navigator = Navigator.of(context);
+              final goRouter = GoRouter.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final String documentId = document.id;
+              
+              // Close dialog with a smoother animation
+              navigator.pop();
+              
+              // Small delay before starting download to allow dialog to close smoothly
+              Future.delayed(const Duration(milliseconds: 100), () {
+                // Start download
+                ref.read(documentNotifierProvider.notifier)
+                    .downloadDocument(documentId)
+                    .then((_) async {
+                  // File should already have a small delay from the notifier
+                  
+                  if (!mounted) return;
+                  
+                  // After download completes, verify file exists before navigating
+                  final doc = ref.read(documentByIdProvider(documentId));
+                  
+                  if (doc != null && doc.isDownloaded) {
+                    // Add a small delay before navigation for a smoother transition
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    if (!mounted) return;
+                    goRouter.pushNamed('document-viewer', pathParameters: {'documentId': documentId});
+                  } else {
+                    // Show error if document isn't available after download
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Document download completed but file is not accessible. Please try again.'),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
-                }
-              }).catchError((error) {
-                // Show error message if download fails
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                }).catchError((error) {
+                  // Check if widget is still mounted before accessing context
+                  if (!mounted) return;
+                  
+                  // Show error message if download fails
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to download: $error'),
                       backgroundColor: Colors.red,
                     ),
                   );
-                }
+                });
               });
             },
             icon: const Icon(Icons.download, size: 16),

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/machine.dart';
-import '../providers/preferences_provider.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
+import '../riverpod/providers/preferences_providers.dart';
+import '../riverpod/notifiers/preferences_notifier.dart';
 
-class MachineListScreen extends StatefulWidget {
+class MachineListScreen extends ConsumerStatefulWidget {
   const MachineListScreen({super.key});
 
   @override
-  State<MachineListScreen> createState() => _MachineListScreenState();
+  ConsumerState<MachineListScreen> createState() => _MachineListScreenState();
 }
 
-class _MachineListScreenState extends State<MachineListScreen> {
+class _MachineListScreenState extends ConsumerState<MachineListScreen> {
   late Future<List<Machine>> _machinesFuture;
 
   Future<List<Machine>> _fetchMachines() async {
@@ -116,77 +117,76 @@ class _MachineListScreenState extends State<MachineListScreen> {
   }
 
   Widget _buildMachineCard(BuildContext context, Machine machine) {
-    return Consumer<PreferencesProvider>(
-      builder: (context, prefsProvider, child) {
-        // Use RepaintBoundary for the card which could rebuild when favorite status changes
-        return RepaintBoundary(
-          child: Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                context.pushNamed('machine-detail', pathParameters: {'machineId': machine.machineId});
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
+    final isFavorite = ref.watch(isMachineFavoriteProvider(machine.machineId));
+    
+    // Use RepaintBoundary for the card which could rebuild when favorite status changes
+    return RepaintBoundary(
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            context.pushNamed('machine-detail', pathParameters: {'machineId': machine.machineId});
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Image.asset(
+                      machine.imagePath,
+                      fit: BoxFit.contain,
+                      // Use only cacheWidth to maintain aspect ratio
+                      cacheWidth: 300,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
                   children: [
                     Expanded(
-                      child: Center(
-                        child: Image.asset(
-                          machine.imagePath,
-                          fit: BoxFit.contain,
-                          // Use only cacheWidth to maintain aspect ratio
-                          cacheWidth: 300,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            machine.manufacturer,
+                            style: CostaTextStyle.bodyText2.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            machine.model,
+                            style: CostaTextStyle.subtitle2,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                machine.manufacturer,
-                                style: CostaTextStyle.bodyText2.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                machine.model,
-                                style: CostaTextStyle.subtitle2,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            prefsProvider.isMachineFavorite(machine.machineId)
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: prefsProvider.isMachineFavorite(machine.machineId)
-                                ? Colors.amber
-                                : Colors.grey,
-                          ),
-                          onPressed: () {
-                            prefsProvider.toggleFavoriteMachine(machine.machineId);
-                          },
-                        ),
-                      ],
+                    IconButton(
+                      icon: Icon(
+                        isFavorite
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: isFavorite
+                            ? Colors.amber
+                            : Colors.grey,
+                      ),
+                      onPressed: () {
+                        ref.read(preferencesNotifierProvider.notifier)
+                            .toggleFavoriteMachine(machine.machineId);
+                      },
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

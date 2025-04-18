@@ -29,8 +29,8 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
   Widget build(BuildContext context) {
     // Early return if no diagrams are available
     if (widget.diagrams.isEmpty) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      return const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -38,7 +38,7 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
               'Parts Diagrams',
               style: CostaTextStyle.headline2,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'No diagrams available for this machine',
               style: CostaTextStyle.bodyText1,
@@ -53,12 +53,12 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Parts Diagrams',
             style: CostaTextStyle.headline2,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Diagrams and part information for service and repair',
             style: CostaTextStyle.bodyText1,
           ),
@@ -122,7 +122,7 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
         decoration: cardDecoration,
         padding: const EdgeInsets.all(16),
         width: double.infinity,
-        child: Column(
+        child: const Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -209,9 +209,9 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: costaRed,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),

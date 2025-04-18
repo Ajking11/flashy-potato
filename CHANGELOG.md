@@ -20,6 +20,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings screen for preferences management
 - Last update check tracking
 - Download count and management from dashboard
+- Migrated from Provider to Riverpod 2.6.1 for improved state management
+- Added code generation support with riverpod_generator
+- Implemented proper separation of state, notifiers, and providers with Riverpod
+- Storage Access Framework implementation for USB file transfers
+- Enhanced SAF implementation with fallback for older Android versions
+- Advanced permission handling based on device Android version
+- Progressive enhancement approach for optimal compatibility
+- Intelligent path detection for USB drives
+- Hybrid file transfer strategy (SAF or direct based on context)
+- User-friendly error messages and recovery options
+- File picker for selecting storage locations with SAF
+- Permission handling for storage access
+- Flutter file dialog for saving files using system APIs
+- Interactive permissions intro screen with educational content
+- Automatic permission request flow before login
+
+### Changed
+- Updated USB Transfer wizard UI to focus on storage selection instead of detection
+- Changed file transfer flow to use SAF APIs for improved Android 10+ compatibility
+- Updated UI language to be more inclusive of different storage types
+- Improved error handling during file transfer process
 
 ### Security
 - Implemented secure password hashing with SHA-256 and salt for login system
@@ -28,11 +49,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused `_isRunningOnEmulator` and `_getDeviceBrand` methods in document_viewer_screen.dart
 - Eliminated dead code in `_loadDocument` method in document_viewer_screen.dart
 - Removed unnecessary 'this.' qualifier in machine.dart
+- Addressed compatibility issues with Android 10+ scoped storage restrictions
+- Fixed potential permission issues when accessing external storage
+- Improved file transfer reliability with better error handling
 - Removed unnecessary `toList()` call in spread operator in document_repository_screen.dart
 - Fixed RangeError in parts_diagram_tab.dart when diagrams list is empty
 - Fixed potential Flutter error in SplashScreen by adding mounted check before navigation
 - Fixed missing implementation of State.build method in main.dart
 - Fixed syntax errors and missing brackets in main.dart
+- Fixed BuildContext usage across async gaps in document_repository_screen.dart and permissions_intro_screen.dart
+- Applied automated fixes with `dart fix --apply` to update code style
+- Improved document and software download animation smoothness with throttled progress updates
+- Enhanced download button UI transitions using AnimatedSwitcher for smoother state changes
+- Added animated transitions between download states in software download UI
+- Fixed Riverpod reference issues in software detail screen
+- Fixed unused variable warnings to improve code quality
 
 ## [1.0.1] - 2025-03-08
 ### Added

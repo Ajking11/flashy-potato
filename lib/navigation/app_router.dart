@@ -7,6 +7,7 @@ import '../screens/document_repository_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/machine_detail_screen.dart';
 import '../screens/document_viewer_screen.dart';
+import '../screens/permissions_intro_screen.dart';
 import '../screens/preferences_screen.dart';
 import '../screens/software_repository_screen.dart';
 import '../services/session_manager.dart';
@@ -22,25 +23,40 @@ class AppRouter {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
+    // Using redirect callbacks with a StatefulWidget wrapper is a more reliable approach
+    // See StatefulShellRoute example in go_router documentation
     redirect: (BuildContext context, GoRouterState state) {
-      // Check if the user is logged in
+      final String location = state.matchedLocation;
+      
+      // We'll check for login state here (this doesn't require async)
       final bool isLoggedIn = SessionManager.isLoggedIn();
-      final bool isLoggingIn = state.matchedLocation == '/login';
+      final bool isLoggingIn = location == '/login';
+      final bool isPermissionIntro = location == '/permissions';
       
-      // If not logged in and not on login page, redirect to login
-      if (!isLoggedIn && !isLoggingIn) {
-        return '/login';
-      }
-      
-      // If logged in and on login page, redirect to home
+      // If on login page but already logged in, go to home
       if (isLoggedIn && isLoggingIn) {
         return '/';
+      }
+      
+      // For permission intro logic, we'll handle it in the main.dart with a wrapper widget
+      // This keeps the router simpler and avoids async issues
+      
+      // If not logged in and not on login page or permissions page, redirect to login
+      if (!isLoggedIn && !isLoggingIn && !isPermissionIntro) {
+        return '/login';
       }
       
       // No redirect needed
       return null;
     },
     routes: [
+      // Permissions intro route
+      GoRoute(
+        path: '/permissions',
+        name: 'permissions',
+        builder: (context, state) => const PermissionsIntroScreen(),
+      ),
+      
       // Login route
       GoRoute(
         path: '/login',

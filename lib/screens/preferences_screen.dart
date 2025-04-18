@@ -1,21 +1,21 @@
 // lib/screens/preferences_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/preferences_provider.dart';
+import '../riverpod/notifiers/preferences_notifier.dart';
+// We only need the notifier directly, not the granular providers
+// import '../riverpod/providers/preferences_providers.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
 
-class PreferencesScreen extends StatefulWidget {
+class PreferencesScreen extends ConsumerWidget {
   const PreferencesScreen({super.key});
 
   @override
-  State<PreferencesScreen> createState() => _PreferencesScreenState();
-}
-
-class _PreferencesScreenState extends State<PreferencesScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preferencesState = ref.watch(preferencesNotifierProvider);
+    final preferencesNotifier = ref.watch(preferencesNotifierProvider.notifier);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -25,9 +25,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         backgroundColor: costaRed,
         elevation: 0,
       ),
-      body: Consumer<PreferencesProvider>(
-        builder: (context, prefsProvider, child) {
-          if (prefsProvider.isLoading) {
+      body: Builder(
+        builder: (context) {
+          if (preferencesState.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(costaRed),
@@ -49,15 +49,15 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        const Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.account_circle_outlined,
                               color: costaRed,
                               size: 20,
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
+                            SizedBox(width: 8),
+                            Text(
                               'Signed in as',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -102,9 +102,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         title: const Text('Document Updates'),
                         subtitle: const Text(
                             'Get notified when documents are updated'),
-                        value: prefsProvider.preferences.notifyDocumentUpdates,
+                        value: preferencesState.preferences.notifyDocumentUpdates,
                         onChanged: (value) {
-                          prefsProvider.updateNotificationPreferences(
+                          preferencesNotifier.updateNotificationPreferences(
                             notifyDocumentUpdates: value,
                           );
                         },
@@ -118,9 +118,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         title: const Text('Important Information'),
                         subtitle: const Text(
                             'Get notified about important FSE information'),
-                        value: prefsProvider.preferences.notifyImportantInfo,
+                        value: preferencesState.preferences.notifyImportantInfo,
                         onChanged: (value) {
-                          prefsProvider.updateNotificationPreferences(
+                          preferencesNotifier.updateNotificationPreferences(
                             notifyImportantInfo: value,
                           );
                         },
@@ -142,12 +142,12 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Favorite Machines',
                           style: CostaTextStyle.subtitle2,
                         ),
                         const SizedBox(height: 8),
-                        prefsProvider.preferences.favoriteMachineIds.isEmpty
+                        preferencesState.preferences.favoriteMachineIds.isEmpty
                             ? const Text(
                                 'No favorite machines yet. Mark machines as favorites from the machine list.',
                                 style: TextStyle(color: Colors.grey),
@@ -155,7 +155,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                             : Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: prefsProvider.preferences.favoriteMachineIds
+                                children: preferencesState.preferences.favoriteMachineIds
                                     .map((id) => Chip(
                                           label: Text(_getMachineName(id)),
                                           deleteIcon: const Icon(
@@ -163,18 +163,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                                             size: 16,
                                           ),
                                           onDeleted: () {
-                                            prefsProvider.toggleFavoriteMachine(id);
+                                            preferencesNotifier.toggleFavoriteMachine(id);
                                           },
                                         ))
                                     .toList(),
                               ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'Favorite Filters',
                           style: CostaTextStyle.subtitle2,
                         ),
                         const SizedBox(height: 8),
-                        prefsProvider.preferences.favoriteFilterTypes.isEmpty
+                        preferencesState.preferences.favoriteFilterTypes.isEmpty
                             ? const Text(
                                 'No favorite filters yet. Mark filters as favorites from the filter results.',
                                 style: TextStyle(color: Colors.grey),
@@ -182,7 +182,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                             : Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: prefsProvider.preferences.favoriteFilterTypes
+                                children: preferencesState.preferences.favoriteFilterTypes
                                     .map((type) => Chip(
                                           label: Text(type),
                                           deleteIcon: const Icon(
@@ -190,7 +190,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                                             size: 16,
                                           ),
                                           onDeleted: () {
-                                            prefsProvider.toggleFavoriteFilter(type);
+                                            preferencesNotifier.toggleFavoriteFilter(type);
                                           },
                                         ))
                                     .toList(),
@@ -205,10 +205,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 Card(
                   child: Column(
                     children: [
-                      ListTile(
-                        title: const Text('Version'),
-                        subtitle: const Text(appVersion),
-                        leading: const Icon(
+                      const ListTile(
+                        title: Text('Version'),
+                        subtitle: Text(appVersion),
+                        leading: Icon(
                           Icons.info_outline,
                           color: costaRed,
                         ),
@@ -217,7 +217,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       ListTile(
                         title: const Text('Last Update Check'),
                         subtitle: Text(
-                          _formatDate(prefsProvider.preferences.lastUpdateCheck),
+                          _formatDate(preferencesState.preferences.lastUpdateCheck),
                         ),
                         leading: const Icon(
                           Icons.update,
@@ -226,7 +226,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         trailing: IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: () {
-                            prefsProvider.updateLastUpdateCheck();
+                            preferencesNotifier.updateLastUpdateCheck();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Checked for updates'),
@@ -340,11 +340,13 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       );
                       
                       if (confirm == true) {
-                        await SessionManager.clearSession();
-                        if (!mounted) return;
+                        // Capture the router before async operation
+                        final currentRouter = router;
                         
-                        // Navigate back to login screen using captured router
-                        router.go('/login');
+                        await SessionManager.clearSession();
+                        
+                        // Use the captured router reference
+                        currentRouter.go('/login');
                       }
                     },
                     icon: const Icon(Icons.logout),

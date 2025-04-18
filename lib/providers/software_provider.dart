@@ -271,7 +271,7 @@ class SoftwareProvider with ChangeNotifier {
       notifyListeners();
       
       // Download the software using Firebase Storage with progress tracking
-      final filePath = await _softwareService.downloadSoftware(
+      await _softwareService.downloadSoftware(
         software,
         onProgress: (progress) {
           _downloadProgress[softwareId] = progress;

@@ -27,12 +27,12 @@ class SpecificationsTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Technical Specifications',
             style: CostaTextStyle.headline2,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Detailed technical information for this machine',
             style: CostaTextStyle.bodyText1,
           ),
@@ -56,9 +56,9 @@ class SpecificationsTab extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: costaRed,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),

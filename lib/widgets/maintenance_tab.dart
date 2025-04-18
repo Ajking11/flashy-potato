@@ -24,12 +24,12 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Maintenance Procedures',
             style: CostaTextStyle.headline2,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Regular maintenance ensures optimal performance and longevity',
             style: CostaTextStyle.bodyText1,
           ),
@@ -117,10 +117,10 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                   const SizedBox(height: 16),
                   
                   // Steps header
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.list, color: costaRed, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(Icons.list, color: costaRed, size: 20),
+                      SizedBox(width: 8),
                       Text(
                         'Steps',
                         style: CostaTextStyle.subtitle2,
@@ -150,7 +150,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           Container(
             width: 24,
             height: 24,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: costaRed,
               shape: BoxShape.circle,
             ),

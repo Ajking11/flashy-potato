@@ -25,12 +25,12 @@ class _TroubleshootingTabState extends State<TroubleshootingTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Troubleshooting Guides',
             style: CostaTextStyle.headline2,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Solutions for common issues with this machine',
             style: CostaTextStyle.bodyText1,
           ),
@@ -118,7 +118,7 @@ class _TroubleshootingTabState extends State<TroubleshootingTab> {
                   const SizedBox(height: 16),
                   
                   // Solutions header
-                  Text(
+                  const Text(
                     'Possible Solutions',
                     style: CostaTextStyle.subtitle2,
                   ),

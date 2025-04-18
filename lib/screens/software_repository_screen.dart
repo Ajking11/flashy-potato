@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/software.dart';
 import '../models/machine.dart';
-import '../providers/software_provider.dart';
+import '../riverpod/notifiers/software_notifier.dart';
+import '../riverpod/providers/software_providers.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
 import 'software_detail_screen.dart';
 
-class SoftwareRepositoryScreen extends StatefulWidget {
+class SoftwareRepositoryScreen extends ConsumerStatefulWidget {
   final String? initialMachineId; // Optional: to pre-filter by machine
 
   const SoftwareRepositoryScreen({
@@ -16,10 +17,10 @@ class SoftwareRepositoryScreen extends StatefulWidget {
   });
 
   @override
-  State<SoftwareRepositoryScreen> createState() => _SoftwareRepositoryScreenState();
+  ConsumerState<SoftwareRepositoryScreen> createState() => _SoftwareRepositoryScreenState();
 }
 
-class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
+class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _showOnlyDownloaded = false;
@@ -30,7 +31,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
     // If initial machine ID is provided, apply the filter
     if (widget.initialMachineId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<SoftwareProvider>(context, listen: false)
+        ref.read(softwareNotifierProvider.notifier)
             .filterByMachine(widget.initialMachineId);
       });
     }
@@ -61,7 +62,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -141,7 +142,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                     icon: const Icon(Icons.clear, color: Colors.grey),
                     onPressed: () {
                       _searchController.clear();
-                      Provider.of<SoftwareProvider>(context, listen: false)
+                      ref.read(softwareNotifierProvider.notifier)
                           .setSearchQuery('');
                       _searchFocusNode.unfocus();
                     },
@@ -154,7 +155,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
             ),
           ),
           onChanged: (value) {
-            Provider.of<SoftwareProvider>(context, listen: false)
+            ref.read(softwareNotifierProvider.notifier)
                 .setSearchQuery(value);
           },
         ),
@@ -163,85 +164,81 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   }
 
   Widget _buildFilterChips() {
-    return Consumer<SoftwareProvider>(
-      builder: (context, softwareProvider, child) {
-        final selectedMachineId = softwareProvider.selectedMachineId;
-        final selectedCategory = softwareProvider.selectedCategory;
-        final hasFilters = selectedMachineId != null || selectedCategory != null;
-        
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: latte,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
+    final selectedCategory = ref.watch(softwareSelectedCategoryProvider);
+    final hasFilters = selectedMachineId != null || selectedCategory != null;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: latte,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Filter buttons row - connected with square inner edges
+          Row(
             children: [
-              // Filter buttons row - connected with square inner edges
-              Row(
-                children: [
-                  // Connected filter buttons taking full width
-                  Expanded(
-                    child: Row(
-                      children: [
-                        // Machine filter dropdown - only show if not pre-filtered
-                        if (widget.initialMachineId == null)
-                          Expanded(
-                            flex: 1,
-                            child: _buildFilterDropdown(
-                              label: 'Machines',  // Shortened label
-                              value: selectedMachineId == null 
-                                ? 'All' 
-                                : _getShortMachineName(selectedMachineId),
-                              icon: Icons.devices,
-                              onTap: () => _showMachineFilterSheet(context, softwareProvider),
-                              isActive: selectedMachineId != null,
-                              isLeftButton: true,
-                            ),
-                          ),
-                        
-                        // Category filter dropdown
-                        Expanded(
-                          flex: 1,
-                          child: _buildFilterDropdown(
-                            label: 'Categories',  // Shortened label
-                            value: selectedCategory ?? 'All',
-                            icon: Icons.category,
-                            onTap: () => _showCategoryFilterSheet(context, softwareProvider),
-                            isActive: selectedCategory != null,
-                            isRightButton: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Active filters display
-              if (hasFilters) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+              // Connected filter buttons taking full width
+              Expanded(
+                child: Row(
                   children: [
-                    if (selectedMachineId != null)
-                      _buildActiveFilterChip(
-                        _getMachineName(selectedMachineId),
-                        Icons.devices,
-                        () => softwareProvider.filterByMachine(null),
+                    // Machine filter dropdown - only show if not pre-filtered
+                    if (widget.initialMachineId == null)
+                      Expanded(
+                        flex: 1,
+                        child: _buildFilterDropdown(
+                          label: 'Machines',  // Shortened label
+                          value: selectedMachineId == null 
+                            ? 'All' 
+                            : _getShortMachineName(selectedMachineId),
+                          icon: Icons.devices,
+                          onTap: () => _showMachineFilterSheet(context),
+                          isActive: selectedMachineId != null,
+                          isLeftButton: true,
+                        ),
                       ),
-                    if (selectedCategory != null)
-                      _buildActiveFilterChip(
-                        selectedCategory,
-                        _getCategoryIcon(selectedCategory),
-                        () => softwareProvider.filterByCategory(null),
+                    
+                    // Category filter dropdown
+                    Expanded(
+                      flex: 1,
+                      child: _buildFilterDropdown(
+                        label: 'Categories',  // Shortened label
+                        value: selectedCategory ?? 'All',
+                        icon: Icons.category,
+                        onTap: () => _showCategoryFilterSheet(context),
+                        isActive: selectedCategory != null,
+                        isRightButton: true,
                       ),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ],
           ),
-        );
-      },
+          
+          // Active filters display
+          if (hasFilters) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (selectedMachineId != null)
+                  _buildActiveFilterChip(
+                    _getMachineName(selectedMachineId),
+                    Icons.devices,
+                    () => ref.read(softwareNotifierProvider.notifier).filterByMachine(null),
+                  ),
+                if (selectedCategory != null)
+                  _buildActiveFilterChip(
+                    selectedCategory,
+                    _getCategoryIcon(selectedCategory),
+                    () => ref.read(softwareNotifierProvider.notifier).filterByCategory(null),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -364,11 +361,9 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   }
 
   // Show bottom sheet for machine filter selection
-  void _showMachineFilterSheet(
-    BuildContext context,
-    SoftwareProvider softwareProvider,
-  ) {
+  void _showMachineFilterSheet(BuildContext context) {
     final machines = getMachines();
+    final selectedMachineId = ref.read(softwareSelectedMachineIdProvider);
     
     showModalBottomSheet(
       context: context,
@@ -418,10 +413,10 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (softwareProvider.selectedMachineId != null)
+                      if (selectedMachineId != null)
                         TextButton.icon(
                           onPressed: () {
-                            softwareProvider.filterByMachine(null);
+                            ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.restart_alt, size: 16),
@@ -446,11 +441,11 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                     color: costaRed,
                   ),
                   title: const Text('All Machines'),
-                  selected: softwareProvider.selectedMachineId == null,
+                  selected: selectedMachineId == null,
                   selectedTileColor: costaRed.withValues(alpha: 0.1),
                   selectedColor: costaRed,
                   onTap: () {
-                    softwareProvider.filterByMachine(null);
+                    ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
                     Navigator.pop(context);
                   },
                 ),
@@ -462,7 +457,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                     itemCount: machines.length,
                     itemBuilder: (context, index) {
                       final machine = machines[index];
-                      final isSelected = softwareProvider.selectedMachineId == machine.machineId;
+                      final isSelected = selectedMachineId == machine.machineId;
                       
                       return ListTile(
                         leading: isSelected
@@ -473,7 +468,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                         selectedTileColor: costaRed.withValues(alpha: 0.1),
                         selectedColor: costaRed,
                         onTap: () {
-                          softwareProvider.filterByMachine(machine.machineId);
+                          ref.read(softwareNotifierProvider.notifier).filterByMachine(machine.machineId);
                           Navigator.pop(context);
                         },
                       );
@@ -489,11 +484,9 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   }
 
   // Show bottom sheet for category filter selection
-  void _showCategoryFilterSheet(
-    BuildContext context,
-    SoftwareProvider softwareProvider,
-  ) {
+  void _showCategoryFilterSheet(BuildContext context) {
     final categories = SoftwareCategory.getAllCategories();
+    final selectedCategory = ref.read(softwareSelectedCategoryProvider);
     
     showModalBottomSheet(
       context: context,
@@ -543,10 +536,10 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (softwareProvider.selectedCategory != null)
+                      if (selectedCategory != null)
                         TextButton.icon(
                           onPressed: () {
-                            softwareProvider.filterByCategory(null);
+                            ref.read(softwareNotifierProvider.notifier).filterByCategory(null);
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.restart_alt, size: 16),
@@ -571,11 +564,11 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                     color: costaRed,
                   ),
                   title: const Text('All Categories'),
-                  selected: softwareProvider.selectedCategory == null,
+                  selected: selectedCategory == null,
                   selectedTileColor: costaRed.withValues(alpha: 0.1),
                   selectedColor: costaRed,
                   onTap: () {
-                    softwareProvider.filterByCategory(null);
+                    ref.read(softwareNotifierProvider.notifier).filterByCategory(null);
                     Navigator.pop(context);
                   },
                 ),
@@ -587,7 +580,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final category = categories[index];
-                      final isSelected = softwareProvider.selectedCategory == category;
+                      final isSelected = selectedCategory == category;
                       
                       return ListTile(
                         leading: Icon(
@@ -599,7 +592,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
                         selectedTileColor: costaRed.withValues(alpha: 0.1),
                         selectedColor: costaRed,
                         onTap: () {
-                          softwareProvider.filterByCategory(category);
+                          ref.read(softwareNotifierProvider.notifier).filterByCategory(category);
                           Navigator.pop(context);
                         },
                       );
@@ -615,120 +608,119 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   }
 
   Widget _buildSoftwareList() {
-    return Consumer<SoftwareProvider>(
-      builder: (context, softwareProvider, child) {
-        if (softwareProvider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+    final isLoading = ref.watch(isSoftwareLoadingProvider);
+    final filteredSoftwareList = ref.watch(filteredSoftwareListProvider);
+    
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+        ),
+      );
+    }
+
+    var softwareList = filteredSoftwareList;
+    
+    // Apply offline filter if needed
+    if (_showOnlyDownloaded) {
+      softwareList = softwareList.where((sw) => sw.isDownloaded).toList();
+    }
+
+    if (softwareList.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.no_sim,
+              size: 64,
+              color: Colors.grey.shade400,
             ),
-          );
-        }
-
-        var softwareList = softwareProvider.filteredSoftwareList;
-        
-        // Apply offline filter if needed
-        if (_showOnlyDownloaded) {
-          softwareList = softwareList.where((sw) => sw.isDownloaded).toList();
-        }
-
-        if (softwareList.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.no_sim,
-                  size: 64,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No software found',
-                  style: CostaTextStyle.subtitle1.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Try changing your search or filters',
-                  style: CostaTextStyle.bodyText1.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                // Refresh button
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    softwareProvider.refreshSoftware();
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh Software'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: costaRed,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 16),
+            Text(
+              'No software found',
+              style: CostaTextStyle.subtitle1.copyWith(
+                color: Colors.grey.shade600,
+              ),
             ),
-          );
-        }
+            const SizedBox(height: 8),
+            Text(
+              'Try changing your search or filters',
+              style: CostaTextStyle.bodyText1.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            // Refresh button
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.read(softwareNotifierProvider.notifier).refreshSoftware();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Software'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: costaRed,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-        // Use RefreshIndicator for pull-to-refresh functionality
-        return RefreshIndicator(
-          onRefresh: () => softwareProvider.refreshSoftware(),
-          color: costaRed,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: softwareList.length + 1, // Add one for the Firebase indicator
-            itemBuilder: (context, index) {
-              // First item is the Firebase indicator
-              if (index == 0) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+    // Use RefreshIndicator for pull-to-refresh functionality
+    return RefreshIndicator(
+      onRefresh: () => ref.read(softwareNotifierProvider.notifier).refreshSoftware(),
+      color: costaRed,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: softwareList.length + 1, // Add one for the Firebase indicator
+        itemBuilder: (context, index) {
+          // First item is the Firebase indicator
+          if (index == 0) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud, color: Colors.blue, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Software from Firebase',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.cloud, color: Colors.blue, size: 18),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Software from Firebase',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Pull to refresh',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  const Spacer(),
+                  Text(
+                    'Pull to refresh',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
                   ),
-                );
-              }
-              
-              // Adjust index to account for the Firebase indicator
-              final swIndex = index - 1;
-              final software = softwareList[swIndex];
-              
-              return FadeAnimation(
-                delay: Duration(milliseconds: 50 * swIndex),
-                child: _buildSoftwareCard(software),
-              );
-            },
-          ),
-        );
-      },
+                ],
+              ),
+            );
+          }
+          
+          // Adjust index to account for the Firebase indicator
+          final swIndex = index - 1;
+          final software = softwareList[swIndex];
+          
+          return FadeAnimation(
+            delay: Duration(milliseconds: 50 * swIndex),
+            child: _buildSoftwareCard(software),
+          );
+        },
+      ),
     );
   }
 
@@ -924,15 +916,37 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   }
 
   Widget _buildDownloadButton(Software software) {
-    final softwareProvider = Provider.of<SoftwareProvider>(context, listen: true);
-    final isDownloading = softwareProvider.isDownloading(software.id);
-    final downloadProgress = softwareProvider.getDownloadProgress(software.id);
-    
+    return Consumer(
+      builder: (context, ref, _) {
+        final downloadProgress = ref.watch(softwareDownloadProgressProvider(software.id));
+        final isDownloading = downloadProgress > 0;
+        
+        // Use AnimatedSwitcher for smooth transitions between button states
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: animation,
+                child: child,
+              ),
+            );
+          },
+          child: _buildDownloadButtonState(software, isDownloading, downloadProgress, ref),
+        );
+      }
+    );
+  }
+  
+  // Helper to build the appropriate button state
+  Widget _buildDownloadButtonState(Software software, bool isDownloading, double downloadProgress, WidgetRef ref) {
     // If software is downloaded, show remove button
     if (software.isDownloaded) {
       return TextButton.icon(
+        key: const ValueKey('remove_button'),
         onPressed: () {
-          Provider.of<SoftwareProvider>(context, listen: false)
+          ref.read(softwareNotifierProvider.notifier)
               .removeDownload(software.id);
         },
         icon: const Icon(Icons.delete_outline, size: 16),
@@ -940,45 +954,52 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
         style: TextButton.styleFrom(
           foregroundColor: Colors.grey.shade700,
           padding: EdgeInsets.zero,
-          minimumSize: const Size(50, 30),
+          minimumSize: const Size(80, 30),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
     } 
     // If software is currently downloading, show progress
     else if (isDownloading) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Progress indicator
-          SizedBox(
-            width: 80,
-            height: 4,
-            child: LinearProgressIndicator(
-              value: downloadProgress,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+      return SizedBox(
+        key: const ValueKey('progress_indicator'),
+        width: 80,
+        height: 30, // Match height of buttons for smooth transition
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Progress indicator
+            SizedBox(
+              width: 80,
+              height: 4,
+              child: LinearProgressIndicator(
+                value: downloadProgress,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // Progress text
-          Text(
-            '${(downloadProgress * 100).toInt()}%',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
+            const SizedBox(height: 4),
+            // Progress text
+            Text(
+              '${(downloadProgress * 100).toInt()}%',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     } 
     // If software is not downloaded and not downloading, show download button
     else {
       return TextButton.icon(
+        key: const ValueKey('download_button'),
         onPressed: () {
           // Start download
-          Provider.of<SoftwareProvider>(context, listen: false)
+          ref.read(softwareNotifierProvider.notifier)
               .downloadSoftware(software.id);
         },
         icon: const Icon(Icons.download_outlined, size: 16),
@@ -986,7 +1007,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
         style: TextButton.styleFrom(
           foregroundColor: costaRed,
           padding: EdgeInsets.zero,
-          minimumSize: const Size(50, 30),
+          minimumSize: const Size(80, 30),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
@@ -1031,9 +1052,43 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
   
   // Show prompt to download software before using
   void _showDownloadPrompt(Software software) {
+    // Method to start the download (to be called from the dialog)
+    Future<void> startDownload() async {
+      try {
+        // Cache values for use in closures
+        final String softwareId = software.id;
+        
+        // Start download with throttled progress updates (implemented in the notifier)
+        await ref.read(softwareNotifierProvider.notifier)
+            .downloadSoftware(softwareId);
+            
+        // Short delay to ensure file is completely saved
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        if (!mounted) return;
+            
+        // Check if software is now available
+        final sw = ref.read(softwareNotifierProvider.notifier)
+            .getSoftwareById(softwareId);
+            
+        if (sw != null && sw.isDownloaded) {
+          // Add a small delay before opening for a smoother transition
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (!mounted) return;
+          _openSoftware(sw);
+        } else {
+          _showErrorSnackBar('Software download completed but file is not accessible. Please try again.');
+        }
+      } catch (error) {
+        if (!mounted) return;
+        _showErrorSnackBar('Failed to download: $error');
+      }
+    }
+    
+    // Show the download prompt dialog
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Download Required'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1063,7 +1118,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey,
             ),
@@ -1071,42 +1126,13 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              // Close dialog
-              Navigator.pop(context);
-              // Start download
-              Provider.of<SoftwareProvider>(context, listen: false)
-                  .downloadSoftware(software.id)
-                  .then((_) async {
-                // Add a small delay to ensure file is completely written to disk
-                await Future.delayed(const Duration(milliseconds: 500));
-                
-                // After download completes, verify file exists before using
-                final swProvider = Provider.of<SoftwareProvider>(context, listen: false);
-                final sw = swProvider.getSoftwareById(software.id);
-                
-                if (sw != null && sw.isDownloaded && mounted) {
-                  _openSoftware(sw);
-                } else {
-                  // Show error if software isn't available after download
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Software download completed but file is not accessible. Please try again.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }).catchError((error) {
-                // Show error message if download fails
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to download: $error'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+              // Close dialog with a smoother animation
+              Navigator.pop(dialogContext);
+              
+              // Small delay before starting download to allow dialog to close smoothly
+              Future.delayed(const Duration(milliseconds: 100), () {
+                // Start download
+                startDownload();
               });
             },
             icon: const Icon(Icons.download, size: 16),
@@ -1117,6 +1143,16 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+  
+  // Helper method to show error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }
@@ -1143,182 +1179,7 @@ class _SoftwareRepositoryScreenState extends State<SoftwareRepositoryScreen> {
     }
   }
   
-  // No longer used - replaced by SoftwareDetailScreen
-  void _unusedShowSoftwareDetailsDialog(Software software) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(_getCategoryIcon(software.category), color: _getCategoryColor(software.category)),
-            const SizedBox(width: 8),
-            Expanded(child: Text(software.name, style: CostaTextStyle.subtitle1)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Version badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: costaRed.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: costaRed.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  'Version ${software.version}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: costaRed,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Description
-              const Text('Description:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(software.description),
-              const SizedBox(height: 16),
-              
-              // Installation Password (if available)
-              if (software.password != null && software.password!.isNotEmpty) ...[
-                const Text('Machine Password:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.lock_outline, color: Colors.orange, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              software.password!,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Enter this password on the machine when prompted during installation',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              
-              // Compatible machines
-              if (software.machineIds.isNotEmpty || software.concession.isNotEmpty) ...[
-                const Text('Compatible with:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ...software.machineIds.map((id) => Chip(
-                      label: Text(_getShortMachineName(id)),
-                      backgroundColor: Colors.grey.shade100,
-                    )),
-                    ...software.concession.map((id) => Chip(
-                      label: Text(_getShortMachineName(id)),
-                      backgroundColor: Colors.grey.shade100,
-                    )),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              
-              // File details
-              const Text('File details:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('Size: ${software.fileSizeKB} KB'),
-              Text('Released: ${_formatDate(software.releaseDate)}'),
-              if (software.downloadCount > 0)
-                Text('Downloaded ${software.downloadCount} times'),
-              if (software.sha256FileHash != null && software.sha256FileHash!.length >= 16)
-                Text('SHA256: ${software.sha256FileHash!.substring(0, 16)}...', style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 16),
-              
-              // Installation instructions
-              if (software.password != null && software.password!.isNotEmpty) ...[
-                const Text('Installation Instructions:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                const Text('1. Transfer this file to a USB drive'),
-                const Text('2. Insert the USB drive into the machine'),
-                const Text('3. Navigate to the software installation menu'),
-                const Text('4. Select the file and enter the password when prompted'),
-                const SizedBox(height: 16),
-              ],
-              
-              // Note that this is a simulation
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'This app shows software details only. To install, transfer the file to the target machine.',
-                        style: TextStyle(fontSize: 12, color: Colors.blue),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Share ${software.name} feature would be implemented here'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            icon: const Icon(Icons.share),
-            label: const Text('Share'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: costaRed,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // This method has been removed in favor of SoftwareDetailScreen
 
   // Helper method to get category color
   Color _getCategoryColor(String category) {

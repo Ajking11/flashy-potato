@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/filter_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../riverpod/notifiers/filter_notifier.dart';
+import '../riverpod/providers/filter_providers.dart';
 import '../widgets/input_card.dart';
 import '../widgets/result_card.dart';
 import '../widgets/result_card_shimmer.dart';
 import '../widgets/fade_animation.dart';
 import '../constants.dart';
 
-class FilterJsonScreen extends StatefulWidget {
+class FilterJsonScreen extends ConsumerStatefulWidget {
   const FilterJsonScreen({super.key});
 
   @override
-  State<FilterJsonScreen> createState() => _FilterJsonScreenState();
+  ConsumerState<FilterJsonScreen> createState() => _FilterJsonScreenState();
 }
 
-class _FilterJsonScreenState extends State<FilterJsonScreen>
+class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
     with SingleTickerProviderStateMixin {
   // Controllers for user input fields
   final TextEditingController tempHardnessController = TextEditingController();
@@ -35,16 +36,15 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    
-    // Check if we need to start the animation (deferred to didChangeDependencies)
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Control animation based on provider state
-    final filterProvider = Provider.of<FilterProvider>(context, listen: false);
-    _updateAnimationState(filterProvider.isLoading || filterProvider.isCalculating);
+    final isLoading = ref.read(isFilterLoadingProvider);
+    final isCalculating = ref.read(isFilterCalculatingProvider);
+    _updateAnimationState(isLoading || isCalculating);
   }
 
   // Method to control animation state
@@ -73,8 +73,24 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
     }
 
     try {
-      await Provider.of<FilterProvider>(context, listen: false)
+      await ref.read(filterNotifierProvider.notifier)
           .getFilterRecommendation(tempHardness, totalHardness, cpd);
+      
+      // Check for errors
+      final error = ref.read(filterErrorProvider);
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error,
+              style: CostaTextStyle.bodyText2.copyWith(color: Colors.white),
+            ),
+            backgroundColor: accentRed,
+            duration: const Duration(seconds: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,30 +180,36 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
 
   // Build results view
-  Widget _buildResultsView(FilterProvider filterProvider, {Key? key}) {
+  Widget _buildResultsView({Key? key}) {
     // Get user input values as integers
     final tempHardness = int.tryParse(tempHardnessController.text) ?? 0;
     final totalHardness = int.tryParse(totalHardnessController.text) ?? 0;
     final cpd = int.tryParse(cpdController.text) ?? 0;
+    
+    final filteredData = ref.watch(filteredDataProvider);
+    final filterSize = ref.watch(filterSizeProvider);
+    final bypass = ref.watch(bypassProvider);
+    final capacity = ref.watch(capacityProvider);
+    final showExpandedDetails = ref.watch(showExpandedDetailsProvider);
     
     return SingleChildScrollView(
       key: key,
       padding: const EdgeInsets.all(16.0),
       child: FadeAnimation(
         child: ResultCard(
-          filteredData: filterProvider.filteredData!,
-          filterSize: filterProvider.filterSize!,
-          bypass: filterProvider.bypass!,
-          capacity: filterProvider.capacity!,
+          filteredData: filteredData!,
+          filterSize: filterSize!,
+          bypass: bypass!,
+          capacity: capacity!,
           tempHardness: tempHardness,
           totalHardness: totalHardness,
           cpd: cpd,
-          showExpandedDetails: filterProvider.showExpandedDetails,
+          showExpandedDetails: showExpandedDetails,
           toggleExpandedDetails: () {
-            filterProvider.toggleExpandedDetails();
+            ref.read(filterNotifierProvider.notifier).toggleExpandedDetails();
           },
           onNewSearch: () {
-            filterProvider.resetSearch();
+            ref.read(filterNotifierProvider.notifier).resetSearch();
           },
         ),
       ),
@@ -283,6 +305,14 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Watch for state changes
+    final isLoading = ref.watch(isFilterLoadingProvider);
+    final isCalculating = ref.watch(isFilterCalculatingProvider);
+    final hasResults = ref.watch(hasFilterResultsProvider);
+    
+    // Update animation state
+    _updateAnimationState(isLoading || isCalculating);
+    
     return Scaffold(
       appBar: _buildAppBar(context),
       body: SafeArea(
@@ -294,19 +324,10 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
                 color: latte,
               ),
             ),
-            // Only use Consumer for parts that need to react to state changes
-            Consumer<FilterProvider>(
-              builder: (context, filterProvider, child) {
-                // Update animation state when provider state changes
-                _updateAnimationState(filterProvider.isLoading || filterProvider.isCalculating);
-                
-                // Use AnimatedSwitcher for smooth transitions between states
-                // Simplify animation to isolate potential issues
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: _getStateWidget(filterProvider),
-                );
-              },
+            // Use AnimatedSwitcher for smooth transitions between states
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: _getStateWidget(isLoading, isCalculating, hasResults),
             ),
           ],
         ),
@@ -315,14 +336,14 @@ class _FilterJsonScreenState extends State<FilterJsonScreen>
   }
   
   // Helper method to get the correct widget for current state
-  Widget _getStateWidget(FilterProvider filterProvider) {
+  Widget _getStateWidget(bool isLoading, bool isCalculating, bool hasResults) {
     // Give each state a unique key to ensure animation runs
-    if (filterProvider.isLoading) {
+    if (isLoading) {
       return _buildLoadingSpinner(key: const ValueKey('loading'));
-    } else if (filterProvider.isCalculating) {
+    } else if (isCalculating) {
       return _buildCalculatingView(key: const ValueKey('calculating'));
-    } else if (filterProvider.hasResults) {
-      return _buildResultsView(filterProvider, key: const ValueKey('results'));
+    } else if (hasResults) {
+      return _buildResultsView(key: const ValueKey('results'));
     } else {
       return _buildInputView(key: const ValueKey('input'));
     }

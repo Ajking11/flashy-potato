@@ -33,10 +33,20 @@ A comprehensive mobile application for Costa Coffee field service engineers (FSE
 
 ## Technical Information
 
+### State Management
+The app uses Riverpod 2.6.1 for state management, providing several advantages:
+- Better testability with proper dependency injection
+- Code generation for boilerplate reduction
+- Family providers for parameterized access
+- Clear separation of concerns with state/notifier/provider pattern
+
 ### Development Setup
 ```bash
 # Install dependencies
 flutter pub get
+
+# Generate Riverpod code
+flutter pub run build_runner build --delete-conflicting-outputs
 
 # Run the application
 flutter run
@@ -52,7 +62,11 @@ flutter test
 - `lib/screens`: Main application screens
 - `lib/widgets`: Reusable UI components
 - `lib/models`: Data models
-- `lib/providers`: State management
+- `lib/providers`: Legacy Provider-based state management
+- `lib/riverpod`: Riverpod-based state management
+  - `states`: State classes defining application state
+  - `notifiers`: Notifiers that manipulate state
+  - `providers`: Provider definitions for consuming state
 - `lib/services`: Business logic and external services
 - `lib/constants.dart`: Styling constants and theme definitions
 
@@ -66,6 +80,11 @@ This project follows the official Flutter style guide with additional convention
 
 ## Recent Updates
 See the [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes.
+
+### Latest Developments
+- Migrated from Provider to Riverpod 2.6.1 for improved state management
+- Added code generation support with riverpod_generator
+- Implemented proper separation of state, notifiers, and providers
 
 ## Future Development
 See [FUTURE.md](FUTURE.md) for planned feature enhancements and improvements.

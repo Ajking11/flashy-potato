@@ -9,7 +9,7 @@ class ThemeService {
       brightness: Brightness.light,
       primaryColor: costaRed,
       scaffoldBackgroundColor: italianPorcelain,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: costaRed,
         secondary: accentRed,
         surface: italianPorcelain, // Changed from background to surface

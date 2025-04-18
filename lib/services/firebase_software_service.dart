@@ -7,7 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/software.dart';
 
 class FirebaseSoftwareService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // This will be used in future implementations for transactions and batched operations
+  // final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Collection reference for software packages

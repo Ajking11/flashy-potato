@@ -273,7 +273,7 @@ class DocumentProvider with ChangeNotifier {
       notifyListeners();
       
       // Download the document using Firebase Storage with progress tracking
-      final filePath = await _documentService.downloadDocument(
+      await _documentService.downloadDocument(
         document,
         onProgress: (progress) {
           _downloadProgress[documentId] = progress;

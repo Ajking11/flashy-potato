@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/document.dart';
 import '../constants.dart';
-import '../providers/document_provider.dart';
+import '../riverpod/providers/document_providers.dart';
 
-class DocumentViewerScreen extends StatefulWidget {
+class DocumentViewerScreen extends ConsumerStatefulWidget {
   final TechnicalDocument? document;
   final String? documentId;
   final String? filePath; // Optional externally provided filePath
@@ -24,10 +24,10 @@ class DocumentViewerScreen extends StatefulWidget {
   }) : assert(document != null || documentId != null, 'Either document or documentId must be provided');
 
   @override
-  State<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
+  ConsumerState<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
 }
 
-class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
+class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   String? _pdfPath;
   bool _isLoading = true;
   int _totalPages = 0;
@@ -51,8 +51,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       _document = widget.document!;
     } else if (widget.documentId != null) {
       // Get document from provider
-      final docProvider = Provider.of<DocumentProvider>(context, listen: false);
-      final doc = docProvider.getDocumentById(widget.documentId!);
+      final doc = ref.read(documentByIdProvider(widget.documentId!));
       if (doc != null) {
         _document = doc;
       } else {
@@ -80,7 +79,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       _loadDocument();
     } else {
       _initializePdfControllerWithPath(widget.filePath!);
-      _isLoading = false;
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 

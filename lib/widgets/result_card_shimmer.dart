@@ -37,24 +37,24 @@ class ResultCardShimmer extends StatelessWidget {
                 const SizedBox(width: 20),
                 
                 // Details placeholder
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ShimmerLoading(height: 20),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       ShimmerLoading(height: 16),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ShimmerLoading(height: 16),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ShimmerLoading(height: 16),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       ShimmerLoading(height: 20),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       ShimmerLoading(height: 16),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ShimmerLoading(height: 16),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ShimmerLoading(height: 16),
                     ],
                   ),

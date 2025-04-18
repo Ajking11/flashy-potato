@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants.dart';
-import '../providers/preferences_provider.dart';
-import '../providers/document_provider.dart';
 import '../models/machine.dart';
 import '../widgets/fade_animation.dart';
+import '../riverpod/providers/preferences_providers.dart';
+import '../riverpod/providers/document_providers.dart';
+import '../riverpod/notifiers/document_notifier.dart';
+import '../riverpod/notifiers/preferences_notifier.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only watch documents at this level, preferences watched in specific widgets
+    final allDocuments = ref.watch(documentsProvider);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -34,84 +34,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: Consumer2<PreferencesProvider, DocumentProvider>(
-        builder: (context, prefsProvider, docProvider, child) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // Updates & Notifications
-                  FadeAnimation(
-                    delay: const Duration(milliseconds: 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader('Updates & Notifications'),
-                        _buildUpdatesCard(context, prefsProvider, docProvider),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Quick Actions
-                  FadeAnimation(
-                    delay: const Duration(milliseconds: 200),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader('Quick Actions'),
-                        _buildQuickActionsGrid(context),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Favorite Machines
-                  FadeAnimation(
-                    delay: const Duration(milliseconds: 300),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader('Favorite Machines'),
-                        _buildFavoriteMachinesGrid(context, prefsProvider),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Recent Documents (only show if there are documents)
-                  if (docProvider.documents.isNotEmpty) ...[
-                    FadeAnimation(
-                      delay: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader('Recent Documents'),
-                          _buildRecentDocumentsCard(context, docProvider),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              // Updates & Notifications
+              FadeAnimation(
+                delay: const Duration(milliseconds: 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Updates & Notifications'),
+                    _buildUpdatesCard(context, ref),
                   ],
-                  // App version
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        'Version $appVersion',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Quick Actions
+              FadeAnimation(
+                delay: const Duration(milliseconds: 200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Quick Actions'),
+                    _buildQuickActionsGrid(context),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Favorite Machines
+              FadeAnimation(
+                delay: const Duration(milliseconds: 300),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Favorite Machines'),
+                    _buildFavoriteMachinesGrid(context, ref),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Recent Documents (only show if there are documents)
+              if (allDocuments.isNotEmpty) ...[
+                FadeAnimation(
+                  delay: const Duration(milliseconds: 400),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader('Recent Documents'),
+                      _buildRecentDocumentsCard(context, ref),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              // App version
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Version $appVersion',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -233,14 +229,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildUpdatesCard(
-    BuildContext context, 
-    PreferencesProvider prefsProvider,
-    DocumentProvider docProvider,
-  ) {
+  Widget _buildUpdatesCard(BuildContext context, WidgetRef ref) {
+    final userPreferences = ref.watch(userPreferencesProvider);
+    final allDocuments = ref.watch(documentsProvider);
+    
     // ignore: unused_local_variable
-    final isOutdated = DateTime.now().difference(prefsProvider.preferences.lastUpdateCheck).inDays > 3;
-    final downloadedCount = docProvider.documents.where((doc) => doc.isDownloaded).length;
+    final isOutdated = DateTime.now().difference(userPreferences.lastUpdateCheck).inDays > 3;
+    final downloadedCount = allDocuments.where((doc) => doc.isDownloaded).length;
 
     return Card(
       elevation: 2,
@@ -338,11 +333,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildFavoriteMachinesGrid(
-    BuildContext context, 
-    PreferencesProvider prefsProvider,
-  ) {
-    final favoriteIds = prefsProvider.preferences.favoriteMachineIds;
+  Widget _buildFavoriteMachinesGrid(BuildContext context, WidgetRef ref) {
+    final userPreferences = ref.watch(userPreferencesProvider);
+    final favoriteIds = userPreferences.favoriteMachineIds;
     
     if (favoriteIds.isEmpty) {
       return Card(
@@ -431,7 +424,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     alignment: Alignment.topRight,
                     child: InkWell(
                       onTap: () {
-                        prefsProvider.toggleFavoriteMachine(machine.machineId);
+                        ref.read(preferencesNotifierProvider.notifier)
+                            .toggleFavoriteMachine(machine.machineId);
                       },
                       child: const Icon(
                         Icons.star,
@@ -476,11 +470,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentDocumentsCard(
-    BuildContext context,
-    DocumentProvider docProvider,
-  ) {
-    final recentDocs = docProvider.documents.take(3).toList();
+  Widget _buildRecentDocumentsCard(BuildContext context, WidgetRef ref) {
+    final allDocuments = ref.watch(documentsProvider);
+    final recentDocs = allDocuments.take(3).toList();
     
     if (recentDocs.isEmpty) {
       return Card(
@@ -588,7 +580,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       } else {
-                        docProvider.downloadDocument(doc.id);
+                        ref.read(documentNotifierProvider.notifier)
+                            .downloadDocument(doc.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Document downloaded for offline use'),
