@@ -1,58 +1,64 @@
 // lib/riverpod/providers/usb_transfer_providers.dart
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:riverpod/riverpod.dart';
+
+typedef Ref = AutoDisposeProviderRef;
 import '../notifiers/usb_transfer_notifier.dart';
 
 part 'usb_transfer_providers.g.dart';
+
+// Fixed Ref class undefined issue
+typedef Ref = AutoDisposeProviderRef;
 
 // Utility providers for UsbTransferState
 // These help access specific parts of the state and avoid unnecessary rebuilds
 
 @riverpod
-int currentStep(CurrentStepRef ref, String softwareId) {
+int currentStep(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.currentStep));
 }
 
 @riverpod
-bool isUsbDetected(IsUsbDetectedRef ref, String softwareId) {
+bool isUsbDetected(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.usbDetected));
 }
 
 @riverpod
-bool isTransferStarted(IsTransferStartedRef ref, String softwareId) {
+bool isTransferStarted(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.transferStarted));
 }
 
 @riverpod
-bool isTransferComplete(IsTransferCompleteRef ref, String softwareId) {
+bool isTransferComplete(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.transferComplete));
 }
 
 @riverpod
-double transferProgress(TransferProgressRef ref, String softwareId) {
+double transferProgress(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.transferProgress));
 }
 
 @riverpod
-String transferStatus(TransferStatusRef ref, String softwareId) {
+String transferStatus(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.transferStatus));
 }
 
 @riverpod
-String? transferError(TransferErrorRef ref, String softwareId) {
+String? transferError(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.error));
 }
 
 // A more comprehensive provider that tells if there's an error state
 @riverpod
-bool hasTransferError(HasTransferErrorRef ref, String softwareId) {
+bool hasTransferError(Ref ref, String softwareId) {
   final error = ref.watch(transferErrorProvider(softwareId));
   return error != null && error.isNotEmpty;
 }
 
 // A provider that combines status information for better UI decisions
 @riverpod
-Map<String, dynamic> transferStatusInfo(TransferStatusInfoRef ref, String softwareId) {
+Map<String, dynamic> transferStatusInfo(Ref ref, String softwareId) {
   final status = ref.watch(transferStatusProvider(softwareId));
   final error = ref.watch(transferErrorProvider(softwareId));
   final hasError = error != null && error.isNotEmpty;

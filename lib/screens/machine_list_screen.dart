@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/machine.dart';
@@ -251,7 +250,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
             const SizedBox(height: 8),
             Text(
               'Storage URL',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 12,
               ),
@@ -285,7 +284,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
             Text(
               '${machine.manufacturer}\n${machine.model}',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: deepRed,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -347,7 +346,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Network Image Error',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 12,
                   ),
@@ -399,7 +398,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Asset Not Found: ${machine.imagePath}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 12,
                   ),
@@ -433,7 +432,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
           ),
           const SizedBox(height: 8),
           // Display the manufacturer and model
-          Text(
+          const Text(
             machine.manufacturer,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -446,7 +445,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
           Text(
             machine.model,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.grey.shade700,
               fontSize: 12,
             ),

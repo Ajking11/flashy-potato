@@ -82,8 +82,6 @@ Future<List<Machine>> getMachinesFromFirestore() async {
     // Get machines that are marked to display in app
     return await _machineService.getAllMachines();
   } catch (e) {
-    // Log the error
-    print('Error fetching machines from Firestore: $e');
     // Fallback to original data if Firestore fails
     return getLocalMachines();
   }

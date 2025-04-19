@@ -1,6 +1,5 @@
 // lib/screens/machine_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/machine.dart';
 import '../constants.dart';

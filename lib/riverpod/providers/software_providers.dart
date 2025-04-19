@@ -1,61 +1,66 @@
 // lib/riverpod/providers/software_providers.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:riverpod/riverpod.dart';
+
+typedef Ref = AutoDisposeProviderRef;
 import '../../models/software.dart';
 import '../notifiers/software_notifier.dart';
+
+// Fixed Ref class undefined issue
 
 part 'software_providers.g.dart';
 
 /// Provider for accessing all software
 @riverpod
-List<Software> softwareList(SoftwareListRef ref) {
+List<Software> softwareList(Ref ref) {
   return ref.watch(softwareNotifierProvider).softwareList;
 }
 
 /// Provider for accessing filtered software
 @riverpod
-List<Software> filteredSoftwareList(FilteredSoftwareListRef ref) {
+List<Software> filteredSoftwareList(Ref ref) {
   return ref.watch(softwareNotifierProvider).filteredSoftwareList;
 }
 
 /// Provider for checking if software is loading
 @riverpod
-bool isSoftwareLoading(IsSoftwareLoadingRef ref) {
+bool isSoftwareLoading(Ref ref) {
   return ref.watch(softwareNotifierProvider).isLoading;
 }
 
 /// Provider for current search query
 @riverpod
-String softwareSearchQuery(SoftwareSearchQueryRef ref) {
+String softwareSearchQuery(Ref ref) {
   return ref.watch(softwareNotifierProvider).searchQuery;
 }
 
 /// Provider for selected machine ID filter
 @riverpod
-String? softwareSelectedMachineId(SoftwareSelectedMachineIdRef ref) {
+String? softwareSelectedMachineId(Ref ref) {
   return ref.watch(softwareNotifierProvider).selectedMachineId;
 }
 
 /// Provider for selected category filter
 @riverpod
-String? softwareSelectedCategory(SoftwareSelectedCategoryRef ref) {
+String? softwareSelectedCategory(Ref ref) {
   return ref.watch(softwareNotifierProvider).selectedCategory;
 }
 
 /// Provider for software download progress
 @riverpod
-double softwareDownloadProgress(SoftwareDownloadProgressRef ref, String softwareId) {
+double softwareDownloadProgress(Ref ref, String softwareId) {
   return ref.watch(softwareNotifierProvider).getDownloadProgress(softwareId);
 }
 
 /// Provider to check if a software is currently downloading
 @riverpod
-bool isSoftwareDownloading(IsSoftwareDownloadingRef ref, String softwareId) {
+bool isSoftwareDownloading(Ref ref, String softwareId) {
   return ref.watch(softwareNotifierProvider).isDownloading(softwareId);
 }
 
 /// Provider to get a specific software by ID
 @riverpod
-Software? softwareById(SoftwareByIdRef ref, String softwareId) {
+Software? softwareById(Ref ref, String softwareId) {
   final software = ref.watch(softwareNotifierProvider).softwareList;
   try {
     return software.firstWhere((s) => s.id == softwareId);
@@ -66,6 +71,6 @@ Software? softwareById(SoftwareByIdRef ref, String softwareId) {
 
 /// Provider for software error state
 @riverpod
-String? softwareError(SoftwareErrorRef ref) {
+String? softwareError(Ref ref) {
   return ref.watch(softwareNotifierProvider).error;
 }
