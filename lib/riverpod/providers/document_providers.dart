@@ -1,15 +1,12 @@
 // lib/riverpod/providers/document_providers.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod/riverpod.dart';
 
-typedef Ref = AutoDisposeProviderRef;
 import '../../models/document.dart';
 import '../notifiers/document_notifier.dart';
 
 part 'document_providers.g.dart';
 
-// Add explicit Ref typedef to fix undefined class error
-typedef Ref = AutoDisposeProviderRef;
 
 /// Provider for accessing all documents
 @riverpod

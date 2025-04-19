@@ -1,15 +1,10 @@
 // lib/riverpod/providers/usb_transfer_providers.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod/riverpod.dart';
-
-typedef Ref = AutoDisposeProviderRef;
 import '../notifiers/usb_transfer_notifier.dart';
 
 part 'usb_transfer_providers.g.dart';
-
-// Fixed Ref class undefined issue
-typedef Ref = AutoDisposeProviderRef;
 
 // Utility providers for UsbTransferState
 // These help access specific parts of the state and avoid unnecessary rebuilds

@@ -4,13 +4,11 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod/riverpod.dart';
 
-typedef Ref = AutoDisposeProviderRef;
 import '../states/usb_transfer_state.dart';
 import '../../models/software.dart';
 import '../providers/software_providers.dart';
@@ -530,6 +528,6 @@ Software softwareById(Ref ref, String softwareId) {
   final softwareList = ref.watch(softwareListProvider);
   return softwareList.firstWhere(
     (software) => software.id == softwareId,
-    orElse: () => throw Exception('Software not found: $softwareId'),
+    orElse: () => throw Exception('Software with ID $softwareId not found'),
   );
 }

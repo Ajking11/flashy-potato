@@ -165,7 +165,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
+                                color: Colors.black.withAlpha((255 * 0.05).round()),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               )
@@ -245,12 +245,12 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
             Icon(
               Icons.image,
               size: 40,
-              color: costaRed.withOpacity(0.7),
+              color: costaRed.withAlpha((255 * 0.7).round()),
             ),
             const SizedBox(height: 8),
             Text(
               'Storage URL',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 12,
               ),
@@ -278,7 +278,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
             Icon(
               Icons.coffee_maker,
               size: 60,
-              color: costaRed.withOpacity(0.7),
+              color: costaRed.withAlpha((255 * 0.7).round()),
             ),
             const SizedBox(height: 8),
             Text(
@@ -320,7 +320,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                   ? loadingProgress.cumulativeBytesLoaded / 
                     loadingProgress.expectedTotalBytes!
                   : null,
-              valueColor: AlwaysStoppedAnimation<Color>(costaRed),
+              valueColor: const AlwaysStoppedAnimation<Color>(costaRed),
             ),
           );
         },
@@ -346,8 +346,8 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Network Image Error',
-                  style: const TextStyle(
-                    color: Colors.grey.shade600,
+                  style: TextStyle(
+                    color: Colors.grey[600], // Use index access for shades
                     fontSize: 12,
                   ),
                 ),
@@ -398,8 +398,8 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Asset Not Found: ${machine.imagePath}',
-                  style: const TextStyle(
-                    color: Colors.grey.shade600,
+                  style: TextStyle(
+                    color: Colors.grey[600], // Use index access for shades
                     fontSize: 12,
                   ),
                 ),
@@ -428,14 +428,14 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
           Icon(
             Icons.coffee_maker,
             size: 60,
-            color: costaRed.withOpacity(0.7),
+            color: costaRed.withAlpha((255 * 0.7).round()),
           ),
           const SizedBox(height: 8),
           // Display the manufacturer and model
-          const Text(
+          Text(
             machine.manufacturer,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: deepRed,
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -445,8 +445,8 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
           Text(
             machine.model,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.grey.shade700,
+            style: TextStyle(
+              color: Colors.grey[700], // Use index access for shades
               fontSize: 12,
             ),
           ),

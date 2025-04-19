@@ -1,12 +1,9 @@
 // lib/riverpod/providers/software_providers.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod/riverpod.dart';
-
-typedef Ref = AutoDisposeProviderRef;
 import '../../models/software.dart';
 import '../notifiers/software_notifier.dart';
 
-// Fixed Ref class undefined issue
 
 part 'software_providers.g.dart';
 
@@ -61,10 +58,14 @@ bool isSoftwareDownloading(Ref ref, String softwareId) {
 /// Provider to get a specific software by ID
 @riverpod
 Software? softwareById(Ref ref, String softwareId) {
-  final software = ref.watch(softwareNotifierProvider).softwareList;
+  // Watching the whole list provider might cause unnecessary rebuilds
+  // if only one software changes but it's not the one we are looking for.
+  // Consider watching the notifier directly if performance becomes an issue.
+  final softwareList = ref.watch(softwareNotifierProvider).softwareList;
   try {
-    return software.firstWhere((s) => s.id == softwareId);
+    return softwareList.firstWhere((s) => s.id == softwareId);
   } catch (e) {
+    // Consider logging the error or handling it differently
     return null;
   }
 }
