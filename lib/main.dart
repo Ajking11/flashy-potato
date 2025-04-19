@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,19 +9,38 @@ import 'services/permissions_service.dart';
 import 'services/theme_service.dart';
 import 'navigation/app_router.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+Future<void> main() async {
+  // Set up error handling for the entire app
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter error caught: ${details.exception}');
+  };
+
+  // Handle other async errors
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    try {
+      // Initialize Firebase with error handling
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('Firebase initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing Firebase: $e');
+      // Continue anyway to allow app to run with local data
+    }
+    
+    // Simple provider container without extra observers that might cause errors
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    debugPrint('Caught error in runZonedGuarded: $error');
+    debugPrint('Stack trace: $stack');
+  });
 }
 
 /// Provider to track permissions intro state

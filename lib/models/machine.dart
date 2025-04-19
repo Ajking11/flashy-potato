@@ -4,7 +4,7 @@ import '../services/firebase_machine_service.dart';
 class Machine {
   final String manufacturer;
   final String model;
-  final String imagePath;
+  final String? imagePath; // Make imagePath nullable to handle missing images
   final String? description;
   final String? documentPath;
   final String machineId;
@@ -12,7 +12,7 @@ class Machine {
   Machine({
     required this.manufacturer,
     required this.model,
-    required this.imagePath,
+    this.imagePath,
     this.description,
     this.documentPath,
     String? machineId,
@@ -20,6 +20,9 @@ class Machine {
 
   // Getter to provide a combined name for display purposes
   String get name => '$manufacturer\n$model';
+  
+  // Getter to check if machine has an image
+  bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
   
   // Convert to JSON for Firestore
   Map<String, dynamic> toJson() {
@@ -34,10 +37,35 @@ class Machine {
   
   // Create from Firestore document
   factory Machine.fromFirestore(Map<String, dynamic> data, String docId) {
+    // Process the document data in release mode - no debug messages
+    // Check different possible image field names
+    String? imageUrl;
+    
+    // Try different possible field names for the image
+    final possibleImageFields = ['imageUrl', 'image', 'imagePath', 'imageURL', 'img', 'url'];
+    
+    for (var field in possibleImageFields) {
+      if (data.containsKey(field) && data[field] != null) {
+        final value = data[field].toString();
+        
+        if (value.isNotEmpty) {
+          // Check if this is a Firebase Storage URL (gs://) which isn't directly usable
+          if (value.startsWith('gs://')) {
+            // Skip Firebase Storage URLs as they need conversion
+            continue;
+          } else {
+            imageUrl = value;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Create and return the machine object with parsed data
     return Machine(
       manufacturer: data['manufacturer'] ?? '',
       model: data['model'] ?? '',
-      imagePath: data['imagePath'] ?? '',
+      imagePath: imageUrl, // Can be null if no image is assigned
       description: data['description'],
       documentPath: data['documentPath'],
       machineId: docId,
@@ -51,8 +79,11 @@ final FirebaseMachineService _machineService = FirebaseMachineService();
 // Get the list of machines from Firestore
 Future<List<Machine>> getMachinesFromFirestore() async {
   try {
+    // Get machines that are marked to display in app
     return await _machineService.getAllMachines();
   } catch (e) {
+    // Log the error
+    print('Error fetching machines from Firestore: $e');
     // Fallback to original data if Firestore fails
     return getLocalMachines();
   }
@@ -67,6 +98,8 @@ List<Machine> getLocalMachines() {
     Machine(manufacturer: 'Schaerer', model: 'SOUL S10', imagePath: 'assets/images/SOULS10.png'),
     Machine(manufacturer: 'Thermoplan', model: 'MARLOW', imagePath: 'assets/images/MARLOW.png'),
     Machine(manufacturer: 'Thermoplan', model: 'MARLOW 1.2', imagePath: 'assets/images/MARLOW12.png'),
+    // Example machine with no image to test the null image path handling
+    Machine(manufacturer: 'Test', model: 'No Image', imagePath: null),
   ];
 }
 

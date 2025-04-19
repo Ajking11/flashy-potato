@@ -64,7 +64,7 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -688,58 +688,65 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
       );
     }
 
+    // Pre-build list items for better performance and to avoid scroll issues
+    final List<Widget> listItems = [];
+    
+    // Add Firebase indicator as first item
+    listItems.add(
+      Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud, color: Colors.blue, size: 18),
+            const SizedBox(width: 8),
+            const Text(
+              'Documents from Firebase',
+              style: TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Pull to refresh',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      )
+    );
+    
+    // Add document cards
+    for (int i = 0; i < documents.length; i++) {
+      final document = documents[i];
+      listItems.add(
+        FadeAnimation(
+          delay: Duration(milliseconds: 50 * i),
+          child: _buildDocumentCard(document),
+        )
+      );
+    }
+
     // Use RefreshIndicator for pull-to-refresh functionality
     return RefreshIndicator(
       onRefresh: () => ref.read(documentNotifierProvider.notifier).refreshDocuments(),
       color: costaRed,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: documents.length + 1, // Add one for the Firebase indicator
-        itemBuilder: (context, index) {
-          // First item is the Firebase indicator
-          if (index == 0) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.cloud, color: Colors.blue, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Documents from Firebase',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Pull to refresh',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          
-          // Adjust index to account for the Firebase indicator
-          final docIndex = index - 1;
-          final document = documents[docIndex];
-          
-          return FadeAnimation(
-            delay: Duration(milliseconds: 50 * docIndex),
-            child: _buildDocumentCard(document),
-          );
-        },
+        itemCount: listItems.length,
+        itemBuilder: (context, index) => listItems[index],
+        // Adding physics parameters to help with scroll issues
+        physics: const AlwaysScrollableScrollPhysics(),
       ),
     );
   }

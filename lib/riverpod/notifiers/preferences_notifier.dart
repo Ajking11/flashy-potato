@@ -12,22 +12,33 @@ part 'preferences_notifier.g.dart';
 
 @riverpod
 class PreferencesNotifier extends _$PreferencesNotifier {
-  late final UserService _userService;
+  UserService? _userService;
   
   @override
   PreferencesState build() {
-    _userService = UserService();
-    _loadPreferences();
-    return PreferencesState.initial();
+    debugPrint('Building PreferencesNotifier');
+    
+    // Initialize with empty state
+    final initialState = PreferencesState.initial();
+    
+    // Use addPostFrameCallback to schedule loading after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPreferences();
+    });
+    
+    return initialState;
   }
 
-  // Load preferences from Firestore first, fallback to local file
+  // Safely initialize and load preferences
   Future<void> _loadPreferences() async {
     state = state.copyWith(isLoading: true);
 
     try {
+      // Make sure service is initialized only once
+      _userService ??= UserService();
+      
       // First try to load from Firestore
-      final firestorePrefs = await _userService.getUserPreferences();
+      final firestorePrefs = await _userService?.getUserPreferences();
       
       if (firestorePrefs != null) {
         state = state.copyWith(
@@ -79,7 +90,7 @@ class PreferencesNotifier extends _$PreferencesNotifier {
   Future<void> _savePreferences() async {
     try {
       // Save to Firestore
-      await _userService.saveUserPreferences(state.preferences);
+      await _userService?.saveUserPreferences(state.preferences);
       
       // Also save to local file as backup
       final file = await _getLocalPrefsFile();
@@ -158,7 +169,7 @@ class PreferencesNotifier extends _$PreferencesNotifier {
     // Update email in Firebase Auth if provided
     if (email != null && email.isNotEmpty) {
       try {
-        await _userService.updateEmail(email);
+        await _userService?.updateEmail(email);
       } catch (e) {
         debugPrint('Error updating email in Firebase: $e');
         // Continue anyway, as we'll save it in preferences

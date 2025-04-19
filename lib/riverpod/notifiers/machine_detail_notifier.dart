@@ -1,4 +1,5 @@
 // lib/riverpod/notifiers/machine_detail_notifier.dart
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../models/machine.dart';
 import '../../models/machine_detail.dart';
@@ -20,45 +21,117 @@ class MachineDetailNotifier extends _$MachineDetailNotifier {
 
   Future<void> _loadMachineDetails(String machineId) async {
     try {
+      assert(() {
+        debugPrint("===== MachineDetailNotifier: Loading details for machine ID: $machineId =====");
+        return true;
+      }());
       state = state.copyWith(isLoading: true, error: null);
       
       // Try to fetch from Firestore first
       try {
+        assert(() {
+          debugPrint("Attempting to fetch machine details from Firestore...");
+          return true;
+        }());
         final details = await _machineService.getMachineDetails(machineId);
         
         if (details != null) {
+          assert(() {
+            debugPrint("Successfully loaded machine details from Firestore!");
+            return true;
+          }());
           state = state.copyWith(machineDetail: details, isLoading: false);
           return;
+        } else {
+          assert(() {
+            debugPrint("No machine details found in Firestore for ID: $machineId");
+            return true;
+          }());
         }
       } catch (firestoreError) {
+        assert(() {
+          debugPrint("Error fetching from Firestore: $firestoreError");
+          debugPrint("Falling back to mock data...");
+          return true;
+        }());
         // Continue to fallback if Firestore fails
       }
+      
+      assert(() {
+        debugPrint("Using fallback mock data for machine ID: $machineId");
+        return true;
+      }());
       
       // Fallback to mock data
       await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
       
       // Get the machine to generate mock data
-      final machine = getMachines().firstWhere(
+      final machines = getMachines();
+      assert(() {
+        debugPrint("Looking for matching machine in ${machines.length} local machines");
+        return true;
+      }());
+      
+      final machine = machines.firstWhere(
         (m) => m.machineId == machineId,
-        orElse: () => Machine(
-          manufacturer: 'Unknown',
-          model: 'Model',
-          imagePath: '',
-          machineId: machineId,
-        ),
+        orElse: () {
+          assert(() {
+            debugPrint("No matching machine found in local data, using generic placeholder");
+            return true;
+          }());
+          return Machine(
+            manufacturer: 'Unknown',
+            model: 'Model',
+            imagePath: null,
+            machineId: machineId,
+          );
+        },
       );
+      
+      assert(() {
+        debugPrint("Generating mock details for: ${machine.manufacturer} ${machine.model}");
+        return true;
+      }());
       
       // Generate mock data - in a real app, you'd load this from a service
       final mockDetail = _getMockMachineDetail(machine);
       
       state = state.copyWith(machineDetail: mockDetail, isLoading: false);
     } catch (e) {
+      assert(() {
+        debugPrint("Error in _loadMachineDetails: $e");
+        return true;
+      }());
       state = state.copyWith(error: "Failed to load machine details: $e", isLoading: false);
     }
   }
 
-  void refreshMachineDetails(String machineId) {
-    _loadMachineDetails(machineId);
+  Future<void> refreshMachineDetails(String machineId) async {
+    try {
+      await _loadMachineDetails(machineId);
+    } catch (e) {
+      assert(() {
+        debugPrint("Error refreshing machine details: $e");
+        return true;
+      }());
+      // Ensure we still use mock data if refresh fails
+      final machine = getMachines().firstWhere(
+        (m) => m.machineId == machineId,
+        orElse: () => Machine(
+          manufacturer: 'Unknown',
+          model: 'Model',
+          imagePath: null,
+          machineId: machineId,
+        ),
+      );
+      
+      final mockDetail = _getMockMachineDetail(machine);
+      state = state.copyWith(
+        machineDetail: mockDetail, 
+        isLoading: false,
+        error: null, // Clear any previous errors
+      );
+    }
   }
 
   // Mock data generator - in a real app, this would come from a service or JSON file

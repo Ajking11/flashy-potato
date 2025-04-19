@@ -667,6 +667,55 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
         ),
       );
     }
+    
+    // Pre-build list items for better performance and to avoid scroll issues
+    final List<Widget> listItems = [];
+    
+    // Add Firebase indicator as first item
+    listItems.add(
+      Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud, color: Colors.blue, size: 18),
+            const SizedBox(width: 8),
+            const Text(
+              'Software from Firebase',
+              style: TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Pull to refresh',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      )
+    );
+    
+    // Add software cards
+    for (int i = 0; i < softwareList.length; i++) {
+      final software = softwareList[i];
+      listItems.add(
+        FadeAnimation(
+          delay: Duration(milliseconds: 50 * i),
+          child: _buildSoftwareCard(software),
+        )
+      );
+    }
 
     // Use RefreshIndicator for pull-to-refresh functionality
     return RefreshIndicator(
@@ -674,52 +723,10 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
       color: costaRed,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: softwareList.length + 1, // Add one for the Firebase indicator
-        itemBuilder: (context, index) {
-          // First item is the Firebase indicator
-          if (index == 0) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.cloud, color: Colors.blue, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Software from Firebase',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Pull to refresh',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          
-          // Adjust index to account for the Firebase indicator
-          final swIndex = index - 1;
-          final software = softwareList[swIndex];
-          
-          return FadeAnimation(
-            delay: Duration(milliseconds: 50 * swIndex),
-            child: _buildSoftwareCard(software),
-          );
-        },
+        itemCount: listItems.length,
+        itemBuilder: (context, index) => listItems[index],
+        // Adding physics parameters to help with scroll issues
+        physics: const AlwaysScrollableScrollPhysics(),
       ),
     );
   }

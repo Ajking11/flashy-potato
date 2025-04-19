@@ -1,5 +1,6 @@
 // lib/screens/machine_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/machine.dart';
 import '../constants.dart';
@@ -31,7 +32,12 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this); // Changed to 5 to include Documents tab
-    // Machine details will be loaded by the provider
+    
+    // Explicitly trigger loading of machine details
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(machineDetailNotifierProvider(widget.machine.machineId).notifier)
+         .refreshMachineDetails(widget.machine.machineId);
+    });
   }
 
   @override
@@ -155,8 +161,99 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
     }
 
     if (machineDetail == null) {
-      return const Center(
-        child: Text('No details available for this machine'),
+      // If we reach here, create a simple placeholder detail
+      // This should rarely happen since we now have better fallback to mock data
+      assert(() {
+        debugPrint("No machine details found, creating simple placeholder tabs");
+        return true;
+      }());
+      return Container(
+        color: latte,
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            // Specifications Tab - Placeholder
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Specifications will be available soon',
+                      style: TextStyle(fontSize: 16, color: deepRed),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Maintenance Tab - Placeholder
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.build_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Maintenance procedures will be available soon',
+                      style: TextStyle(fontSize: 16, color: deepRed),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Troubleshooting Tab - Placeholder
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.help_outline, size: 48, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Troubleshooting guides will be available soon',
+                      style: TextStyle(fontSize: 16, color: deepRed),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Parts Tab - Placeholder
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.view_module_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Parts diagrams will be available soon',
+                      style: TextStyle(fontSize: 16, color: deepRed),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Documents Tab - This should work even without machine details
+            FadeAnimation(
+              child: DocumentRepositoryScreen(initialMachineId: widget.machine.machineId),
+            ),
+          ],
+        ),
       );
     }
 

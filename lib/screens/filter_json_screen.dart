@@ -118,7 +118,6 @@ class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
       backgroundColor: costaRed,
       elevation: 0.0,
       centerTitle: false,
-      // No leading back button needed as we're using bottom navigation
     );
   }
 
@@ -195,23 +194,60 @@ class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
     return SingleChildScrollView(
       key: key,
       padding: const EdgeInsets.all(16.0),
-      child: FadeAnimation(
-        child: ResultCard(
-          filteredData: filteredData!,
-          filterSize: filterSize!,
-          bypass: bypass!,
-          capacity: capacity!,
-          tempHardness: tempHardness,
-          totalHardness: totalHardness,
-          cpd: cpd,
-          showExpandedDetails: showExpandedDetails,
-          toggleExpandedDetails: () {
-            ref.read(filterNotifierProvider.notifier).toggleExpandedDetails();
-          },
-          onNewSearch: () {
-            ref.read(filterNotifierProvider.notifier).resetSearch();
-          },
-        ),
+      child: Column(
+        children: [
+          FadeAnimation(
+            child: ResultCard(
+              filteredData: filteredData!,
+              filterSize: filterSize!,
+              bypass: bypass!,
+              capacity: capacity!,
+              tempHardness: tempHardness,
+              totalHardness: totalHardness,
+              cpd: cpd,
+              showExpandedDetails: showExpandedDetails,
+              toggleExpandedDetails: () {
+                ref.read(filterNotifierProvider.notifier).toggleExpandedDetails();
+              },
+              onNewSearch: null, // Removed the callback since button is removed
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeAnimation(
+            delay: const Duration(milliseconds: 300),
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Start New Search',
+                  style: TextStyle(
+                    color: Colors.white, 
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: costaRed,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Reset form fields
+                  tempHardnessController.clear();
+                  totalHardnessController.clear();
+                  cpdController.clear();
+                  
+                  // Reset state using the new complete reset implementation
+                  ref.read(filterNotifierProvider.notifier).resetSearch();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }
@@ -249,16 +285,38 @@ class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.filter_alt_outlined,
-                      size: 80,
-                      color: costaRed.withValues(alpha: 0.5),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: italianPorcelain,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.filter_alt_outlined,
+                        size: 80,
+                        color: costaRed.withValues(alpha: 0.8),
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     Text(
                       "Enter your water parameters to find the right filter",
                       textAlign: TextAlign.center,
-                      style: CostaTextStyle.subtitle2.copyWith(
+                      style: CostaTextStyle.subtitle1.copyWith(
+                        color: deepRed,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "We'll recommend the best filter based on your water hardness and volume needs",
+                      textAlign: TextAlign.center,
+                      style: CostaTextStyle.bodyText2.copyWith(
                         color: Colors.grey.shade700,
                       ),
                     ),
@@ -278,17 +336,56 @@ class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
       key: key,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: FadeAnimation(
-          child: Form(
-            key: _formKey,
-            child: InputCard(
-              tempHardnessController: tempHardnessController,
-              totalHardnessController: totalHardnessController,
-              cpdController: cpdController,
-              formKey: _formKey,
-              onSubmit: filterData,
+        child: Column(
+          children: [
+            FadeAnimation(
+              delay: const Duration(milliseconds: 100),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      "Find The Perfect Filter",
+                      textAlign: TextAlign.center,
+                      style: CostaTextStyle.subtitle1.copyWith(color: deepRed),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Enter your water test parameters below to get the best filter recommendation",
+                      textAlign: TextAlign.center,
+                      style: CostaTextStyle.bodyText2.copyWith(color: deepRed),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+            FadeAnimation(
+              delay: const Duration(milliseconds: 200),
+              child: Form(
+                key: _formKey,
+                child: InputCard(
+                  tempHardnessController: tempHardnessController,
+                  totalHardnessController: totalHardnessController,
+                  cpdController: cpdController,
+                  formKey: _formKey,
+                  onSubmit: filterData,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -318,10 +415,14 @@ class _FilterJsonScreenState extends ConsumerState<FilterJsonScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            // Background container (doesn't need to rebuild)
+            // Background container with gradient
             Container(
               decoration: const BoxDecoration(
-                color: latte,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [latte, italianPorcelain],
+                ),
               ),
             ),
             // Use AnimatedSwitcher for smooth transitions between states

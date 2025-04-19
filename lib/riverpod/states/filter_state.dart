@@ -1,5 +1,6 @@
 // lib/riverpod/states/filter_state.dart
 import 'package:flutter/foundation.dart';
+import '../../models/filter_recommendation.dart';
 
 @immutable
 class FilterState {
@@ -22,6 +23,9 @@ class FilterState {
   
   // Error state
   final String? error;
+  
+  // Saved filter recommendations
+  final List<FilterRecommendation> savedRecommendations;
 
   const FilterState({
     this.isLoading = true,
@@ -37,6 +41,7 @@ class FilterState {
     this.capacity,
     this.showExpandedDetails = false,
     this.error,
+    this.savedRecommendations = const [],
   });
 
   factory FilterState.initial() {
@@ -57,6 +62,7 @@ class FilterState {
     int? capacity,
     bool? showExpandedDetails,
     String? error,
+    List<FilterRecommendation>? savedRecommendations,
   }) {
     return FilterState(
       isLoading: isLoading ?? this.isLoading,
@@ -72,11 +78,15 @@ class FilterState {
       capacity: capacity ?? this.capacity,
       showExpandedDetails: showExpandedDetails ?? this.showExpandedDetails,
       error: error,
+      savedRecommendations: savedRecommendations ?? this.savedRecommendations,
     );
   }
 
   bool get hasResults {
-    return filteredData != null && filterSize != null && filteredData!.isNotEmpty;
+    return filteredData != null && 
+           filterSize != null && 
+           filteredData!.isNotEmpty && 
+           filteredData!.any((item) => item != null);
   }
 
   @override
@@ -90,7 +100,8 @@ class FilterState {
         other.bypass == bypass &&
         other.capacity == capacity &&
         other.error == error &&
-        listEquals(other.filteredData, filteredData);
+        listEquals(other.filteredData, filteredData) &&
+        listEquals(other.savedRecommendations, savedRecommendations);
   }
 
   @override
@@ -104,6 +115,7 @@ class FilterState {
       capacity,
       error,
       Object.hashAll(filteredData ?? []),
+      Object.hashAll(savedRecommendations),
     );
   }
 }

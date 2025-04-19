@@ -354,23 +354,23 @@ class _AnimatedFindFilterButtonState extends State<_AnimatedFindFilterButton>
           scale: _scaleAnimation.value,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: costaRed.withValues(alpha: _opacityAnimation.value * 0.3),
-                  blurRadius: 8 + (_animationController.value * 4),
-                  offset: const Offset(0, 4),
+                  color: costaRed.withValues(alpha: _opacityAnimation.value * 0.2),
+                  blurRadius: 4 + (_animationController.value * 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: widget.onSubmit,
-              icon: const Icon(Icons.search, color: Colors.white),
+              icon: const Icon(Icons.search, color: Colors.white, size: 18),
               label: const Text(
                 'Find Filter',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -378,9 +378,9 @@ class _AnimatedFindFilterButtonState extends State<_AnimatedFindFilterButton>
               style: ElevatedButton.styleFrom(
                 backgroundColor: costaRed,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),

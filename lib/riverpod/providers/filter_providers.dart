@@ -57,3 +57,6 @@ bool showExpandedDetails(ShowExpandedDetailsRef ref) {
 String? filterError(FilterErrorRef ref) {
   return ref.watch(filterNotifierProvider).error;
 }
+
+// We'll access saved recommendations directly through filterNotifierProvider
+// instead of using a separate provider to avoid code generation issues

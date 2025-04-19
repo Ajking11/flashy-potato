@@ -1,6 +1,9 @@
 // lib/riverpod/notifiers/filter_notifier.dart
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../../models/filter_recommendation.dart';
 import '../../services/filter_service.dart';
 import '../states/filter_state.dart';
 
@@ -14,6 +17,7 @@ class FilterNotifier extends _$FilterNotifier {
   FilterState build() {
     _filterService = FilterService();
     _preloadData();
+    _loadSavedRecommendations();
     return FilterState.initial();
   }
 
@@ -103,6 +107,25 @@ class FilterNotifier extends _$FilterNotifier {
         isCalculating: false,
         error: null,
       );
+      
+      // Auto-save the successful recommendation
+      final filteredDataList = result['filteredData'] as List<dynamic>;
+      if (filteredDataList.isNotEmpty) {
+        final filterType = filteredDataList[0]['filter_type'] as String? ?? 'Unknown';
+        
+        final recommendation = FilterRecommendation(
+          tempHardness: tempHardness,
+          totalHardness: totalHardness,
+          cpd: cpd,
+          filterType: filterType,
+          filterSize: result['filterSize'] ?? 'Unknown',
+          bypass: result['bypass'] ?? 'Unknown',
+          capacity: result['capacity'] ?? 0,
+          createdAt: DateTime.now(),
+        );
+        
+        _saveRecommendation(recommendation);
+      }
     } catch (e) {
       state = state.copyWith(
         isCalculating: false,
@@ -120,20 +143,143 @@ class FilterNotifier extends _$FilterNotifier {
     state = state.copyWith(showExpandedDetails: !state.showExpandedDetails);
   }
 
-  // Reset search
+  // Reset search - force the app back to input view
   void resetSearch() {
-    if (state.hasResults) {
-      state = state.copyWith(
-        filteredData: null,
-        filterSize: null,
-        bypass: null,
-        capacity: null,
-        showExpandedDetails: false,
-        error: null,
-      );
-    }
+    // Force a complete state reset
+    state = FilterState.initial().copyWith(
+      // Keep only the data we've already loaded
+      filterListData: state.filterListData,
+      cpdData: state.cpdData,
+      freshFilterData: state.freshFilterData,
+      standardFilterData: state.standardFilterData,
+      finestFilterData: state.finestFilterData,
+      isLoading: false,
+      savedRecommendations: state.savedRecommendations,
+    );
   }
 
+  // Load saved filter recommendations from SharedPreferences
+  Future<void> _loadSavedRecommendations() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedRecsJson = prefs.getStringList('savedFilterRecommendations') ?? [];
+      
+      final savedRecs = savedRecsJson
+          .map((json) => FilterRecommendation.fromJson(jsonDecode(json)))
+          .toList();
+      
+      // Sort by creation date (newest first)
+      savedRecs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      state = state.copyWith(savedRecommendations: savedRecs);
+    } catch (e) {
+      debugPrint('Error loading saved recommendations: $e');
+    }
+  }
+  
+  // Save current filter recommendation
+  Future<void> saveCurrentRecommendation() async {
+    if (!state.hasResults) return;
+    
+    try {
+      final filteredDataList = state.filteredData as List<dynamic>;
+      if (filteredDataList.isEmpty) return;
+      
+      final filterType = filteredDataList[0]['filter_type'] as String? ?? 'Unknown';
+      
+      final recommendation = FilterRecommendation(
+        tempHardness: int.tryParse(filteredDataList[0]['temp_hardness'].toString()) ?? 0,
+        totalHardness: int.tryParse(filteredDataList[0]['total_hardness'].toString()) ?? 0,
+        cpd: int.tryParse(filteredDataList[0]['cpd'].toString()) ?? 0,
+        filterType: filterType,
+        filterSize: state.filterSize ?? 'Unknown',
+        bypass: state.bypass ?? 'Unknown',
+        capacity: state.capacity ?? 0,
+        createdAt: DateTime.now(),
+      );
+      
+      _saveRecommendation(recommendation);
+    } catch (e) {
+      debugPrint('Error saving recommendation: $e');
+    }
+  }
+  
+  // Helper method to save a recommendation
+  Future<void> _saveRecommendation(FilterRecommendation recommendation) async {
+    try {
+      // Add to existing recommendations
+      final updatedRecs = [...state.savedRecommendations, recommendation];
+      
+      // Keep only the most recent 10 recommendations
+      if (updatedRecs.length > 10) {
+        updatedRecs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        updatedRecs.removeRange(10, updatedRecs.length);
+      }
+      
+      // Update state
+      state = state.copyWith(savedRecommendations: updatedRecs);
+      
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = updatedRecs.map((rec) => jsonEncode(rec.toJson())).toList();
+      await prefs.setStringList('savedFilterRecommendations', jsonList);
+    } catch (e) {
+      debugPrint('Error saving recommendation: $e');
+    }
+  }
+  
+  // Delete a saved recommendation
+  Future<void> deleteSavedRecommendation(FilterRecommendation recommendation) async {
+    try {
+      final updatedRecs = [...state.savedRecommendations];
+      updatedRecs.removeWhere((rec) => 
+          rec.createdAt == recommendation.createdAt &&
+          rec.filterType == recommendation.filterType &&
+          rec.filterSize == recommendation.filterSize);
+      
+      // Update state
+      state = state.copyWith(savedRecommendations: updatedRecs);
+      
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = updatedRecs.map((rec) => jsonEncode(rec.toJson())).toList();
+      await prefs.setStringList('savedFilterRecommendations', jsonList);
+    } catch (e) {
+      debugPrint('Error deleting recommendation: $e');
+    }
+  }
+  
+  // Load a saved recommendation into the current view
+  void loadSavedRecommendation(FilterRecommendation recommendation) {
+    state = state.copyWith(
+      filteredData: [{
+        'filter_type': recommendation.filterType,
+        'temp_hardness': recommendation.tempHardness,
+        'total_hardness': recommendation.totalHardness,
+        'cpd': recommendation.cpd,
+      }],
+      filterSize: recommendation.filterSize,
+      bypass: recommendation.bypass,
+      capacity: recommendation.capacity,
+      showExpandedDetails: false,
+      error: null,
+    );
+  }
+  
+  // Clear all saved recommendations
+  Future<void> clearSavedRecommendations() async {
+    try {
+      // Update state
+      state = state.copyWith(savedRecommendations: []);
+      
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('savedFilterRecommendations', []);
+    } catch (e) {
+      debugPrint('Error clearing recommendations: $e');
+    }
+  }
+  
   // Clear cache
   void clearCache() {
     _filterService.clearCache();

@@ -1,9 +1,7 @@
 // lib/riverpod/notifiers/document_notifier.dart
 import 'dart:io';
 import 'dart:convert';
-// We don't actually need Material imports in this file
-// import 'package:flutter/material.dart' hide debugPrint;
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,13 +13,39 @@ part 'document_notifier.g.dart';
 
 @riverpod
 class DocumentNotifier extends _$DocumentNotifier {
-  late final FirebaseDocumentService _documentService;
+  FirebaseDocumentService? _documentService;
   
   @override
   DocumentState build() {
-    _documentService = FirebaseDocumentService();
-    _loadDocuments();
-    return DocumentState.initial();
+    debugPrint('Building DocumentNotifier');
+    
+    // Initialize with empty state
+    final initialState = DocumentState.initial();
+    
+    // Use addPostFrameCallback to schedule loading after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAndLoad();
+    });
+    
+    return initialState;
+  }
+  
+  // Safely initialize the service and load data
+  Future<void> _initializeAndLoad() async {
+    try {
+      // Make sure service is initialized only once
+      _documentService ??= FirebaseDocumentService();
+      
+      // Try to load documents
+      await _loadDocuments();
+    } catch (e) {
+      debugPrint('Error initializing document service: $e');
+      // Set error in state
+      state = state.copyWith(
+        error: 'Error initializing: $e',
+        isLoading: false,
+      );
+    }
   }
 
   // Get document by ID from local cache
@@ -36,6 +60,12 @@ class DocumentNotifier extends _$DocumentNotifier {
   
   // Get document by ID from Firestore if not in local cache
   Future<TechnicalDocument?> fetchDocumentById(String id) async {
+    // Guard against uninitialized service
+    if (_documentService == null) {
+      debugPrint('Document service not initialized');
+      return null;
+    }
+    
     // First try to get from local cache
     TechnicalDocument? doc = getDocumentById(id);
     if (doc != null) {
@@ -44,7 +74,7 @@ class DocumentNotifier extends _$DocumentNotifier {
     
     // If not in cache, fetch from Firestore
     try {
-      doc = await _documentService.getDocumentById(id);
+      doc = await _documentService?.getDocumentById(id);
       
       // If found, add to local cache
       if (doc != null) {
@@ -78,53 +108,97 @@ class DocumentNotifier extends _$DocumentNotifier {
 
   // Load documents from Firestore
   Future<void> _loadDocuments() async {
+    if (_documentService == null) {
+      debugPrint('Document service not initialized');
+      return;
+    }
+  
+    debugPrint('Loading documents...');
+    
+    // Set loading state
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Load documents from Firebase
-      final documents = await _documentService.getAllDocuments();
+      // Try loading from Firebase first
+      List<TechnicalDocument> documents = [];
       
-      // Log document count for debugging
-      debugPrint('Loaded ${documents.length} documents from Firebase');
-      for (var doc in documents) {
-        debugPrint('Document: ${doc.id} - ${doc.title}');
+      try {
+        documents = await _documentService?.getAllDocuments() ?? [];
+        debugPrint('Loaded ${documents.length} documents from Firebase');
+      } catch (e) {
+        debugPrint('Error loading from Firebase: $e');
+        documents = [];
       }
       
-      // If no documents are found from Firebase, load from local JSON as fallback
+      // If Firebase fails or returns empty, load from local
       if (documents.isEmpty) {
-        debugPrint('No documents found in Firebase, loading from local JSON');
+        debugPrint('No documents from Firebase, loading local...');
         await _loadLocalDocuments();
         return;
       }
       
-      // Sort documents by most recent first
+      // Otherwise, process Firebase documents
       documents.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
       
-      // Check which documents are downloaded locally
-      final documentIds = documents.map((doc) => doc.id).toList();
-      final downloadStatus = await _documentService.checkDownloadedDocuments(documentIds);
+      // Set basic state first with the documents
+      state = state.copyWith(
+        documents: documents,
+        filteredDocuments: List<TechnicalDocument>.from(documents),
+        isLoading: false,
+      );
       
-      // Update download status for each document
+      // Apply any filters
+      _applyFilters();
+      
+      // Then try to get download status in the background
+      _updateDownloadStatus(documents);
+      
+    } catch (e) {
+      debugPrint('Error in document loading flow: $e');
+      
+      // Fall back to local data
+      try {
+        await _loadLocalDocuments();
+      } catch (localError) {
+        // Last-resort error handling
+        debugPrint('Failed to load documents from any source: $localError');
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to load documents',
+          documents: const [],
+          filteredDocuments: const [],
+        );
+      }
+    }
+  }
+  
+  // Update download status in the background
+  Future<void> _updateDownloadStatus(List<TechnicalDocument> documents) async {
+    if (_documentService == null) return;
+    
+    try {
+      // Check download status
+      final documentIds = documents.map((doc) => doc.id).toList();
+      final downloadStatus = await _documentService?.checkDownloadedDocuments(documentIds) ?? {};
+      
+      // Update documents with download status
       final updatedDocuments = documents.map((doc) {
         return doc.copyWith(
           isDownloaded: downloadStatus[doc.id] ?? false,
         );
       }).toList();
       
+      // Update state with download status
       state = state.copyWith(
         documents: updatedDocuments,
-        isLoading: false,
+        filteredDocuments: List<TechnicalDocument>.from(updatedDocuments),
       );
       
-      // Apply filters to initialize filtered documents
+      // Re-apply filters
       _applyFilters();
     } catch (e) {
-      debugPrint('Error loading documents from Firebase: $e');
-      debugPrint('Full error details: ${e.toString()}');
-      
-      // Always fall back to local JSON for now to ensure documents are shown
-      debugPrint('Loading local documents as fallback');
-      await _loadLocalDocuments();
+      debugPrint('Error updating download status: $e');
+      // Don't update state on error - keep existing documents
     }
   }
   
@@ -140,7 +214,7 @@ class DocumentNotifier extends _$DocumentNotifier {
       }
       
       // Load fresh documents from Firebase
-      final documents = await _documentService.getAllDocuments();
+      final documents = await _documentService?.getAllDocuments() ?? [];
       
       // Sort documents by most recent first
       documents.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
@@ -170,27 +244,71 @@ class DocumentNotifier extends _$DocumentNotifier {
   
   // Fallback method to load documents from local assets
   Future<void> _loadLocalDocuments() async {
+    debugPrint('Loading local documents as fallback');
+    
     try {
+      // Load the JSON string
       final String jsonData = await rootBundle.loadString('assets/documents.json');
-      final List<dynamic> jsonList = json.decode(jsonData)['documents'];
       
-      final documents = jsonList.map((json) => TechnicalDocument.fromJson(json)).toList();
+      // Parse the JSON data safely
+      Map<String, dynamic> jsonMap;
+      try {
+        jsonMap = json.decode(jsonData) as Map<String, dynamic>;
+      } catch (parseError) {
+        // Handle JSON parsing errors
+        debugPrint('Error parsing documents.json: $parseError');
+        throw Exception('Invalid document file format');
+      }
+      
+      // Verify the structure
+      if (!jsonMap.containsKey('documents')) {
+        throw Exception('Missing "documents" key in JSON file');
+      }
+      
+      final dynamic documentsData = jsonMap['documents'];
+      if (documentsData is! List) {
+        throw Exception('Documents is not a list in JSON file');
+      }
+      
+      // Convert the JSON data to document objects
+      final List<TechnicalDocument> documents = [];
+      
+      for (final item in documentsData) {
+        try {
+          documents.add(TechnicalDocument.fromJson(item));
+        } catch (itemError) {
+          // Log but continue with other documents
+          debugPrint('Error parsing document item: $itemError');
+        }
+      }
+      
+      if (documents.isEmpty) {
+        throw Exception('No valid documents found in local file');
+      }
       
       // Sort documents by most recent first
       documents.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
       
+      // Update state with loaded documents
       state = state.copyWith(
         documents: documents,
+        filteredDocuments: List<TechnicalDocument>.from(documents),
         isLoading: false,
+        error: null,
       );
       
       // Apply filters
       _applyFilters();
+      
     } catch (e) {
       debugPrint('Error loading local documents: $e');
+      
+      // Set error state but avoid crashes
       state = state.copyWith(
         isLoading: false,
-        error: 'Error loading documents: $e',
+        error: 'Could not load documents: ${e.toString().split('\n').first}',
+        documents: const [],
+        filteredDocuments: const [],
       );
     }
   }
@@ -255,9 +373,25 @@ class DocumentNotifier extends _$DocumentNotifier {
     // Update state with filtered documents
     state = state.copyWith(filteredDocuments: filteredDocs);
   }
+  
+  // Get download progress for a specific document
+  double getDownloadProgress(String documentId) {
+    return state.downloadProgress[documentId] ?? 0.0;
+  }
+  
+  // Check if a document is currently downloading
+  bool isDownloading(String documentId) {
+    return state.downloadProgress.containsKey(documentId);
+  }
 
   // Mark document as downloaded for offline access using Firebase Storage
   Future<void> downloadDocument(String documentId) async {
+    // Service check
+    if (_documentService == null) {
+      debugPrint('Document service not initialized');
+      return;
+    }
+    
     final docIndex = state.documents.indexWhere((doc) => doc.id == documentId);
     if (docIndex == -1) return;
 
@@ -273,7 +407,7 @@ class DocumentNotifier extends _$DocumentNotifier {
       double lastReportedProgress = 0.05;
       
       // Download the document using Firebase Storage with throttled progress tracking
-      await _documentService.downloadDocument(
+      await _documentService?.downloadDocument(
         document,
         onProgress: (progress) {
           // Only update if progress has changed by at least 5% to reduce state updates
@@ -332,7 +466,7 @@ class DocumentNotifier extends _$DocumentNotifier {
 
     try {
       // Remove the document using Firebase service
-      await _documentService.removeDownloadedDocument(documentId);
+      await _documentService?.removeDownloadedDocument(documentId);
       
       // Update the document in the state
       final updatedDocuments = List<TechnicalDocument>.from(state.documents);
@@ -358,11 +492,11 @@ class DocumentNotifier extends _$DocumentNotifier {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
-      final results = await _documentService.searchDocuments(query);
+      final results = await _documentService?.searchDocuments(query) ?? [];
       
       // Check which documents are downloaded locally
       final documentIds = results.map((doc) => doc.id).toList();
-      final downloadStatus = await _documentService.checkDownloadedDocuments(documentIds);
+      final downloadStatus = await _documentService?.checkDownloadedDocuments(documentIds) ?? {};
       
       // Update download status for each document
       final updatedResults = results.map((doc) {
