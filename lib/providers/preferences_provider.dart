@@ -92,35 +92,7 @@ class PreferencesProvider with ChangeNotifier {
     }
   }
 
-  // Toggle favorite machine
-  Future<void> toggleFavoriteMachine(String machineId) async {
-    final List<String> updatedFavorites = List.from(_preferences.favoriteMachineIds);
-    
-    if (updatedFavorites.contains(machineId)) {
-      updatedFavorites.remove(machineId);
-    } else {
-      updatedFavorites.add(machineId);
-    }
-    
-    _preferences = _preferences.copyWith(favoriteMachineIds: updatedFavorites);
-    await _savePreferences();
-    notifyListeners();
-  }
-
-  // Toggle favorite filter
-  Future<void> toggleFavoriteFilter(String filterType) async {
-    final List<String> updatedFavorites = List.from(_preferences.favoriteFilterTypes);
-    
-    if (updatedFavorites.contains(filterType)) {
-      updatedFavorites.remove(filterType);
-    } else {
-      updatedFavorites.add(filterType);
-    }
-    
-    _preferences = _preferences.copyWith(favoriteFilterTypes: updatedFavorites);
-    await _savePreferences();
-    notifyListeners();
-  }
+  // Removed favorite functionality
 
   // Update notification preferences
   Future<void> updateNotificationPreferences({
@@ -182,13 +154,5 @@ class PreferencesProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Check if a machine is favorited
-  bool isMachineFavorite(String machineId) {
-    return _preferences.favoriteMachineIds.contains(machineId);
-  }
-
-  // Check if a filter is favorited
-  bool isFilterFavorite(String filterType) {
-    return _preferences.favoriteFilterTypes.contains(filterType);
-  }
+  // Removed favorite functionality
 }

@@ -13,11 +13,11 @@ import '../riverpod/notifiers/machine_detail_notifier.dart';
 import 'document_repository_screen.dart';
 
 class MachineDetailScreen extends ConsumerStatefulWidget {
-  final Machine machine;
+  final String machineId;
 
   const MachineDetailScreen({
     super.key,
-    required this.machine,
+    required this.machineId,
   });
 
   @override
@@ -26,17 +26,55 @@ class MachineDetailScreen extends ConsumerStatefulWidget {
 
 class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  
+  // Machine data future
+  late Future<Machine> _machineFuture;
+  
+  // Load machine data from Firebase or fallback to local data
+  Future<Machine> _loadMachineData() async {
+    try {
+      // Try to get all machines from Firebase first
+      final machines = await getMachinesFromFirestore();
+      return machines.firstWhere(
+        (m) => m.machineId == widget.machineId,
+        orElse: () {
+          // Try local machines if no match found in Firebase
+          final localMachines = getMachines();
+          return localMachines.firstWhere(
+            (m) => m.machineId == widget.machineId,
+            orElse: () => Machine(
+              manufacturer: 'Unknown',
+              model: 'Machine',
+              imagePath: '',
+              description: 'Machine not found',
+              machineId: widget.machineId,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      // Fallback to local machines if Firebase fails
+      final localMachines = getMachines();
+      return localMachines.firstWhere(
+        (m) => m.machineId == widget.machineId,
+        orElse: () => Machine(
+          manufacturer: 'Unknown',
+          model: 'Machine',
+          imagePath: '',
+          description: 'Machine not found',
+          machineId: widget.machineId,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this); // Changed to 5 to include Documents tab
+    _machineFuture = _loadMachineData();
     
-    // Explicitly trigger loading of machine details
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(machineDetailNotifierProvider(widget.machine.machineId).notifier)
-         .refreshMachineDetails(widget.machine.machineId);
-    });
+    // We'll let the provider load its data on its own - no need to trigger refresh
   }
 
   @override
@@ -47,75 +85,87 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.machine.manufacturer,
-              style: CostaTextStyle.appBarTitle.copyWith(
-                fontSize: 16, 
+    return FutureBuilder<Machine>(
+      future: _machineFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text("Loading Machine...", style: CostaTextStyle.appBarTitle),
+              backgroundColor: costaRed,
+              elevation: 0,
+              centerTitle: false,
+            ),
+            body: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(costaRed),
               ),
             ),
-            Text(
-              widget.machine.model,
+          );
+        }
+        
+        final machine = snapshot.data ?? Machine(
+          manufacturer: 'Unknown',
+          model: 'Machine',
+          imagePath: '',
+          machineId: widget.machineId,
+        );
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              "${machine.manufacturer} ${machine.model}",
               style: CostaTextStyle.appBarTitle,
             ),
-          ],
-        ),
-        backgroundColor: costaRed,
-        elevation: 0,
-        centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(kToolbarHeight),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: costaRed,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: costaRed,
-              isScrollable: true,
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.info_outline),
-                  text: 'Specs',
+            backgroundColor: costaRed,
+            elevation: 0,
+            centerTitle: false,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: costaRed,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: costaRed,
+                  isScrollable: true,
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.info_outline),
+                      text: 'Specs',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.build_outlined),
+                      text: 'Maintenance',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.help_outline),
+                      text: 'Troubleshoot',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.view_module_outlined),
+                      text: 'Parts',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.folder_outlined),
+                      text: 'Documents',
+                    ),
+                  ],
                 ),
-                Tab(
-                  icon: Icon(Icons.build_outlined),
-                  text: 'Maintenance',
-                ),
-                Tab(
-                  icon: Icon(Icons.help_outline),
-                  text: 'Troubleshoot',
-                ),
-                Tab(
-                  icon: Icon(Icons.view_module_outlined),
-                  text: 'Parts',
-                ),
-                Tab(
-                  icon: Icon(Icons.folder_outlined),
-                  text: 'Documents',
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-      body: _buildBody(),
+          body: _buildBody(machine),
+        );
+      },
     );
   }
 
-  Widget _buildBody() {
-    final isLoading = ref.watch(isMachineDetailLoadingProvider(widget.machine.machineId));
-    final error = ref.watch(machineDetailErrorProvider(widget.machine.machineId));
-    final machineDetail = ref.watch(machineDetailProvider(widget.machine.machineId));
+  Widget _buildBody(Machine machine) {
+    final isLoading = ref.watch(isMachineDetailLoadingProvider(widget.machineId));
+    final error = ref.watch(machineDetailErrorProvider(widget.machineId));
+    final machineDetail = ref.watch(machineDetailProvider(widget.machineId));
 
     if (isLoading) {
       return const Center(
@@ -147,8 +197,8 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
               ElevatedButton(
                 onPressed: () {
                   // Refresh the data
-                  ref.read(machineDetailNotifierProvider(widget.machine.machineId).notifier)
-                     .refreshMachineDetails(widget.machine.machineId);
+                  ref.read(machineDetailNotifierProvider(widget.machineId).notifier)
+                     .refreshMachineDetails(widget.machineId);
                 },
                 style: primaryButtonStyle,
                 child: const Text('Retry'),
@@ -249,7 +299,7 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
             
             // Documents Tab - This should work even without machine details
             FadeAnimation(
-              child: DocumentRepositoryScreen(initialMachineId: widget.machine.machineId),
+              child: DocumentRepositoryScreen(initialMachineId: widget.machineId),
             ),
           ],
         ),
@@ -283,7 +333,7 @@ class _MachineDetailScreenState extends ConsumerState<MachineDetailScreen> with 
           
           // Documents Tab
           FadeAnimation(
-            child: DocumentRepositoryScreen(initialMachineId: widget.machine.machineId),
+            child: DocumentRepositoryScreen(initialMachineId: widget.machineId),
           ),
         ],
       ),

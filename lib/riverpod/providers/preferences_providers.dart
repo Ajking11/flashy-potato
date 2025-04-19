@@ -25,15 +25,19 @@ bool isPreferencesLoading(Ref ref) {
 /// Provider for checking if a machine is favorited
 @riverpod
 bool isMachineFavorite(Ref ref, String machineId) {
-  // Access the notifier method to check if the machine is a favorite
-  return ref.watch(preferencesNotifierProvider.notifier).isMachineFavorite(machineId);
+  // Implementation will depend on your UserPreferences model
+  // This is a placeholder implementation
+  final favoriteIds = ref.watch(userPreferencesProvider).favoriteMachineIds ?? [];
+  return favoriteIds.contains(machineId);
 }
 
 /// Provider for checking if a filter is favorited
 @riverpod
 bool isFilterFavorite(Ref ref, String filterType) {
-  // Access the notifier method to check if the filter is a favorite
-  return ref.watch(preferencesNotifierProvider.notifier).isFilterFavorite(filterType);
+  // Implementation will depend on your UserPreferences model
+  // This is a placeholder implementation
+  final favoriteFilters = ref.watch(userPreferencesProvider).favoriteFilterTypes ?? [];
+  return favoriteFilters.contains(filterType);
 }
 
 /// Provider for checking if user has email

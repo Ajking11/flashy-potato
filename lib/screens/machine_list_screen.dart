@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/machine.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
-import '../riverpod/providers/preferences_providers.dart';
-import '../riverpod/notifiers/preferences_notifier.dart';
+// Removed imports for favorite system
 
 class MachineListScreen extends ConsumerStatefulWidget {
   const MachineListScreen({super.key});
@@ -478,9 +477,7 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
       return true;
     }());
     
-    final isFavorite = ref.watch(isMachineFavoriteProvider(machine.machineId));
-    
-    // Use RepaintBoundary for the card which could rebuild when favorite status changes
+    // Use RepaintBoundary for the card
     return RepaintBoundary(
       child: Card(
         elevation: 2,
@@ -521,20 +518,6 @@ class _MachineListScreenState extends ConsumerState<MachineListScreen> {
                           ),
                         ],
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        isFavorite
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: isFavorite
-                            ? Colors.amber
-                            : Colors.grey,
-                      ),
-                      onPressed: () {
-                        ref.read(preferencesNotifierProvider.notifier)
-                            .toggleFavoriteMachine(machine.machineId);
-                      },
                     ),
                   ],
                 ),

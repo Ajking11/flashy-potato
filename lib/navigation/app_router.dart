@@ -12,8 +12,6 @@ import '../screens/preferences_screen.dart';
 import '../screens/software_repository_screen.dart';
 import '../services/session_manager.dart';
 
-import '../models/machine.dart';
-
 // Shell route branch for the main app with bottom navigation
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -113,17 +111,9 @@ class AppRouter {
                 parentNavigatorKey: _rootNavigatorKey,
                 builder: (context, state) {
                   final machineId = state.pathParameters['machineId']!;
-                  final machine = getMachines().firstWhere(
-                    (m) => m.machineId == machineId,
-                    orElse: () => Machine(
-                      manufacturer: 'Unknown',
-                      model: 'Machine',
-                      imagePath: '',
-                      description: 'Machine not found',
-                      machineId: 'unknown',
-                    ),
-                  );
-                  return MachineDetailScreen(machine: machine);
+                  // Just pass the machineId directly to the MachineDetailScreen
+                  // It will handle loading the machine data appropriately
+                  return MachineDetailScreen(machineId: machineId);
                 },
               ),
             ],

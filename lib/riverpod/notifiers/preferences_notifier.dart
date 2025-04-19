@@ -108,37 +108,6 @@ class PreferencesNotifier extends _$PreferencesNotifier {
     }
   }
 
-  // Toggle favorite machine
-  Future<void> toggleFavoriteMachine(String machineId) async {
-    final List<String> updatedFavorites = List.from(state.preferences.favoriteMachineIds);
-    
-    if (updatedFavorites.contains(machineId)) {
-      updatedFavorites.remove(machineId);
-    } else {
-      updatedFavorites.add(machineId);
-    }
-    
-    state = state.copyWith(
-      preferences: state.preferences.copyWith(favoriteMachineIds: updatedFavorites),
-    );
-    await _savePreferences();
-  }
-
-  // Toggle favorite filter
-  Future<void> toggleFavoriteFilter(String filterType) async {
-    final List<String> updatedFavorites = List.from(state.preferences.favoriteFilterTypes);
-    
-    if (updatedFavorites.contains(filterType)) {
-      updatedFavorites.remove(filterType);
-    } else {
-      updatedFavorites.add(filterType);
-    }
-    
-    state = state.copyWith(
-      preferences: state.preferences.copyWith(favoriteFilterTypes: updatedFavorites),
-    );
-    await _savePreferences();
-  }
 
   // Update notification preferences
   Future<void> updateNotificationPreferences({
@@ -205,13 +174,47 @@ class PreferencesNotifier extends _$PreferencesNotifier {
     await _savePreferences();
   }
 
-  // Check if a machine is favorited
-  bool isMachineFavorite(String machineId) {
-    return state.preferences.favoriteMachineIds.contains(machineId);
+  // Toggle machine favorite status
+  Future<void> toggleMachineFavorite(String machineId) async {
+    // Get current favorites
+    final currentFavorites = List<String>.from(state.preferences.favoriteMachineIds ?? []);
+    
+    // Toggle the machine's favorite status
+    if (currentFavorites.contains(machineId)) {
+      currentFavorites.remove(machineId);
+    } else {
+      currentFavorites.add(machineId);
+    }
+    
+    // Update state
+    state = state.copyWith(
+      preferences: state.preferences.copyWith(
+        favoriteMachineIds: currentFavorites,
+      ),
+    );
+    
+    await _savePreferences();
   }
-
-  // Check if a filter is favorited
-  bool isFilterFavorite(String filterType) {
-    return state.preferences.favoriteFilterTypes.contains(filterType);
+  
+  // Toggle filter favorite status
+  Future<void> toggleFilterFavorite(String filterType) async {
+    // Get current favorites
+    final currentFavorites = List<String>.from(state.preferences.favoriteFilterTypes ?? []);
+    
+    // Toggle the filter's favorite status
+    if (currentFavorites.contains(filterType)) {
+      currentFavorites.remove(filterType);
+    } else {
+      currentFavorites.add(filterType);
+    }
+    
+    // Update state
+    state = state.copyWith(
+      preferences: state.preferences.copyWith(
+        favoriteFilterTypes: currentFavorites,
+      ),
+    );
+    
+    await _savePreferences();
   }
 }

@@ -49,8 +49,6 @@ flutter:
     - assets/finest_filter_capacities.json
     - assets/fresh_filter_capacities.json
     - assets/standard_filter_capacities.json
-    - assets/documents.json
-    - assets/sample.pdf
 
     # Documents
     - assets/documents/schaerer_scb_parts.pdf

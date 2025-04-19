@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants.dart';
-import '../models/machine.dart';
 import '../widgets/fade_animation.dart';
-import '../riverpod/providers/preferences_providers.dart';
+// import '../riverpod/providers/preferences_providers.dart'; // Removed favorite system
 import '../riverpod/providers/document_providers.dart';
 import '../riverpod/notifiers/document_notifier.dart';
 import '../riverpod/notifiers/preferences_notifier.dart';
@@ -70,18 +69,6 @@ class DashboardScreen extends ConsumerWidget {
                     children: [
                       _buildSectionHeader('Quick Actions'),
                       _buildQuickActionsGrid(context),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Favorite Machines
-                FadeAnimation(
-                  delay: const Duration(milliseconds: 300),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader('Favorite Machines'),
-                      _buildFavoriteMachinesGrid(context, ref),
                     ],
                   ),
                 ),
@@ -239,8 +226,8 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildUpdatesCard(BuildContext context, WidgetRef ref) {
-    // Safely access user preferences
-    final userPreferences = ref.watch(userPreferencesProvider);
+    // Get preferences from the notifier
+    final preferencesState = ref.watch(preferencesNotifierProvider);
     
     // Safely access documents with error handling
     List<dynamic> allDocuments = [];
@@ -251,7 +238,7 @@ class DashboardScreen extends ConsumerWidget {
     }
     
     // ignore: unused_local_variable
-    final isOutdated = DateTime.now().difference(userPreferences.lastUpdateCheck).inDays > 3;
+    final isOutdated = DateTime.now().difference(preferencesState.preferences.lastUpdateCheck).inDays > 3;
     final downloadedCount = allDocuments.where((doc) => doc.isDownloaded).length;
 
     return Card(
@@ -350,155 +337,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFavoriteMachinesGrid(BuildContext context, WidgetRef ref) {
-    final userPreferences = ref.watch(userPreferencesProvider);
-    final favoriteIds = userPreferences.favoriteMachineIds;
-    
-    if (favoriteIds.isEmpty) {
-      return Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(
-                Icons.star_border,
-                size: 48,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'No favorite machines yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Add machines to your favorites from the machines list',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () {
-                  context.go('/machines');
-                },
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Favorites'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: costaRed,
-                  side: const BorderSide(color: costaRed),
-                  minimumSize: const Size(150, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    
-    final allMachines = getMachines();
-    final favoriteMachines = allMachines
-        .where((machine) => favoriteIds.contains(machine.machineId))
-        .toList();
-    
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: favoriteMachines.length,
-      itemBuilder: (context, index) {
-        final machine = favoriteMachines[index];
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: InkWell(
-            onTap: () {
-              context.pushNamed('machine-detail', pathParameters: {'machineId': machine.machineId});
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(preferencesNotifierProvider.notifier)
-                            .toggleFavoriteMachine(machine.machineId);
-                      },
-                      child: const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: machine.imagePath != null
-                      ? Image.asset(
-                          machine.imagePath!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.coffee_maker,
-                              size: 40,
-                              color: Colors.grey,
-                            );
-                          },
-                        )
-                      : const Icon(
-                          Icons.coffee_maker,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    machine.manufacturer,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    machine.model,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 11,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildRecentDocumentsCard(BuildContext context, WidgetRef ref) {
     // Safely access provider with error handling

@@ -133,72 +133,7 @@ class PreferencesScreen extends ConsumerWidget {
                   ),
                 ),
 
-                // Favorites management
-                _buildSectionHeader(context, 'Favorites'),
-                Card(
-                  margin: const EdgeInsets.only(bottom: 24),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Favorite Machines',
-                          style: CostaTextStyle.subtitle2,
-                        ),
-                        const SizedBox(height: 8),
-                        preferencesState.preferences.favoriteMachineIds.isEmpty
-                            ? const Text(
-                                'No favorite machines yet. Mark machines as favorites from the machine list.',
-                                style: TextStyle(color: Colors.grey),
-                              )
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: preferencesState.preferences.favoriteMachineIds
-                                    .map((id) => Chip(
-                                          label: Text(_getMachineName(id)),
-                                          deleteIcon: const Icon(
-                                            Icons.close,
-                                            size: 16,
-                                          ),
-                                          onDeleted: () {
-                                            preferencesNotifier.toggleFavoriteMachine(id);
-                                          },
-                                        ))
-                                    .toList(),
-                              ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Favorite Filters',
-                          style: CostaTextStyle.subtitle2,
-                        ),
-                        const SizedBox(height: 8),
-                        preferencesState.preferences.favoriteFilterTypes.isEmpty
-                            ? const Text(
-                                'No favorite filters yet. Mark filters as favorites from the filter results.',
-                                style: TextStyle(color: Colors.grey),
-                              )
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: preferencesState.preferences.favoriteFilterTypes
-                                    .map((type) => Chip(
-                                          label: Text(type),
-                                          deleteIcon: const Icon(
-                                            Icons.close,
-                                            size: 16,
-                                          ),
-                                          onDeleted: () {
-                                            preferencesNotifier.toggleFavoriteFilter(type);
-                                          },
-                                        ))
-                                    .toList(),
-                              ),
-                      ],
-                    ),
-                  ),
-                ),
+                // Favorites section has been removed
 
                 // App info
                 _buildSectionHeader(context, 'About'),
@@ -384,12 +319,5 @@ class PreferencesScreen extends ConsumerWidget {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  String _getMachineName(String machineId) {
-    // In a real app, you would look up the machine name from your data.
-    final parts = machineId.split('_');
-    if (parts.length >= 2) {
-      return '${parts[0][0].toUpperCase()}${parts[0].substring(1)} ${parts[1][0].toUpperCase()}${parts[1].substring(1)}';
-    }
-    return machineId;
-  }
+  // This method was used for favorites and has been removed
 }
