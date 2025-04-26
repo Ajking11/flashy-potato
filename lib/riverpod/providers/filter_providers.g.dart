@@ -6,7 +6,7 @@ part of 'filter_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$isFilterLoadingHash() => r'79f81c6ba7b13fc5ce7d32a2bf8f5ff85e368fbd';
+String _$isFilterLoadingHash() => r'b37ae380ee1fdb7ba3169b1b64e5f8dc0d74208b';
 
 /// Provider for checking if filters are loading
 ///
@@ -26,7 +26,7 @@ final isFilterLoadingProvider = AutoDisposeProvider<bool>.internal(
 // ignore: unused_element
 typedef IsFilterLoadingRef = AutoDisposeProviderRef<bool>;
 String _$isFilterCalculatingHash() =>
-    r'3e0e3a31c5cbc974cd183e3c76e860536a8fd5c5';
+    r'2de8e52810cda9d7c380f0d6f154ae56f03ccbb2';
 
 /// Provider for checking if filter calculation is in progress
 ///
@@ -45,7 +45,7 @@ final isFilterCalculatingProvider = AutoDisposeProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef IsFilterCalculatingRef = AutoDisposeProviderRef<bool>;
-String _$filteredDataHash() => r'90e06eef57d0effe6736e35e84aee7c37b7eeacb';
+String _$filteredDataHash() => r'121debb06b6ccd6109d4780adb0f6191a2924a47';
 
 /// Provider for accessing filter results
 ///
@@ -63,7 +63,7 @@ final filteredDataProvider = AutoDisposeProvider<List<dynamic>?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FilteredDataRef = AutoDisposeProviderRef<List<dynamic>?>;
-String _$hasFilterResultsHash() => r'af253842eba96c777c834afc57a74c33c4eb77c6';
+String _$hasFilterResultsHash() => r'3677be07af62773742299eff53bc9443149b656b';
 
 /// Provider to check if we have filter results
 ///
@@ -82,7 +82,7 @@ final hasFilterResultsProvider = AutoDisposeProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef HasFilterResultsRef = AutoDisposeProviderRef<bool>;
-String _$filterSizeHash() => r'5b9d8c9e0c2734f47126c1ba4713774fbf621713';
+String _$filterSizeHash() => r'67f9294b2f22b8930ceae80713fabde4ae622fef';
 
 /// Provider for getting filter size
 ///
@@ -100,7 +100,7 @@ final filterSizeProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FilterSizeRef = AutoDisposeProviderRef<String?>;
-String _$bypassHash() => r'40978a8dc787eaff276d13836baf54ec0dacb284';
+String _$bypassHash() => r'6bf92051cbe90da0b41417f7b7ff17ff997752f2';
 
 /// Provider for getting bypass
 ///
@@ -118,7 +118,7 @@ final bypassProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef BypassRef = AutoDisposeProviderRef<String?>;
-String _$capacityHash() => r'766705f2f08802ca8c8aa4cf0c8f25302b62db56';
+String _$capacityHash() => r'21ab57a543eb82469088997185b0b08cad648d45';
 
 /// Provider for getting capacity
 ///
@@ -137,7 +137,7 @@ final capacityProvider = AutoDisposeProvider<int?>.internal(
 // ignore: unused_element
 typedef CapacityRef = AutoDisposeProviderRef<int?>;
 String _$showExpandedDetailsHash() =>
-    r'453d2298b30773d022269d144e777e9e832daf07';
+    r'2888486c9090090889787ccca0c3f8761586e65e';
 
 /// Provider for checking if expanded details should be shown
 ///
@@ -156,7 +156,7 @@ final showExpandedDetailsProvider = AutoDisposeProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ShowExpandedDetailsRef = AutoDisposeProviderRef<bool>;
-String _$filterErrorHash() => r'7bd174e23efea4c8ddaa8055437418860ef4cde0';
+String _$filterErrorHash() => r'5eb1e57c284010a1b293018e337c22ce936989cc';
 
 /// Provider for getting filter error
 ///

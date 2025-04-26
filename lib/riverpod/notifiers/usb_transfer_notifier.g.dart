@@ -6,7 +6,7 @@ part of 'usb_transfer_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$softwareByIdHash() => r'ada8663e052e36fd76823a0a644ebfef16be37f4';
+String _$softwareByIdHash() => r'8a97e4b84aa96ced57c7c9329503ac0d9c890365';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -158,7 +158,7 @@ class _SoftwareByIdProviderElement extends AutoDisposeProviderElement<Software>
 }
 
 String _$usbTransferNotifierHash() =>
-    r'44f94daa933845b841dfffc4986ae9314f92647a';
+    r'f5065f43363222572096c90bd58d3ea684b1420b';
 
 abstract class _$UsbTransferNotifier
     extends BuildlessAutoDisposeNotifier<UsbTransferState> {

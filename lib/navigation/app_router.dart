@@ -10,6 +10,7 @@ import '../screens/document_viewer_screen.dart';
 import '../screens/permissions_intro_screen.dart';
 import '../screens/preferences_screen.dart';
 import '../screens/software_repository_screen.dart';
+import '../screens/software_detail_screen.dart';
 import '../services/session_manager.dart';
 
 // Shell route branch for the main app with bottom navigation
@@ -147,6 +148,18 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: SoftwareRepositoryScreen(),
             ),
+            routes: [
+              // Software detail screen
+              GoRoute(
+                path: ':softwareId',
+                name: 'software-detail',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final softwareId = state.pathParameters['softwareId']!;
+                  return SoftwareDetailScreen.fromId(softwareId: softwareId);
+                },
+              ),
+            ],
           ),
         ],
       ),

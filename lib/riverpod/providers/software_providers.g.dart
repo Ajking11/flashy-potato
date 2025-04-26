@@ -6,7 +6,7 @@ part of 'software_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$softwareListHash() => r'5b0fa099ede3cae63a7ba74b83dc809e6ab5ffe2';
+String _$softwareListHash() => r'bdb5175f428993f1ddb14fedf56d8fe28d5c7a15';
 
 /// Provider for accessing all software
 ///
@@ -25,7 +25,7 @@ final softwareListProvider = AutoDisposeProvider<List<Software>>.internal(
 // ignore: unused_element
 typedef SoftwareListRef = AutoDisposeProviderRef<List<Software>>;
 String _$filteredSoftwareListHash() =>
-    r'8d6e6b66e600dbd360b06ceccf46ec000f97a967';
+    r'5d2f6458e2b8dec60d511e972906da36e47ca75e';
 
 /// Provider for accessing filtered software
 ///
@@ -45,7 +45,7 @@ final filteredSoftwareListProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FilteredSoftwareListRef = AutoDisposeProviderRef<List<Software>>;
-String _$isSoftwareLoadingHash() => r'2c8e817502bf9ce8022a7f92ea32f7ffe3eb91e4';
+String _$isSoftwareLoadingHash() => r'3fa378249f4d4c9c5aa86b816947fe89c4d162d8';
 
 /// Provider for checking if software is loading
 ///
@@ -65,7 +65,7 @@ final isSoftwareLoadingProvider = AutoDisposeProvider<bool>.internal(
 // ignore: unused_element
 typedef IsSoftwareLoadingRef = AutoDisposeProviderRef<bool>;
 String _$softwareSearchQueryHash() =>
-    r'8418022a888395900f42494821922a8643dd855a';
+    r'fd4a642095841774992e733a86b80fc1681d4e40';
 
 /// Provider for current search query
 ///
@@ -85,7 +85,7 @@ final softwareSearchQueryProvider = AutoDisposeProvider<String>.internal(
 // ignore: unused_element
 typedef SoftwareSearchQueryRef = AutoDisposeProviderRef<String>;
 String _$softwareSelectedMachineIdHash() =>
-    r'f3a5ae7098844a42f03a6f714d1131c7b519e51e';
+    r'9c86afb4873e02b8ed2d5460c0425bbb5e98ad03';
 
 /// Provider for selected machine ID filter
 ///
@@ -105,7 +105,7 @@ final softwareSelectedMachineIdProvider = AutoDisposeProvider<String?>.internal(
 // ignore: unused_element
 typedef SoftwareSelectedMachineIdRef = AutoDisposeProviderRef<String?>;
 String _$softwareSelectedCategoryHash() =>
-    r'65964ff078aee503e70da388f8acd88b061fcb3f';
+    r'30021860b30022ea8eb966eb563cabb1d96b4f64';
 
 /// Provider for selected category filter
 ///
@@ -125,7 +125,7 @@ final softwareSelectedCategoryProvider = AutoDisposeProvider<String?>.internal(
 // ignore: unused_element
 typedef SoftwareSelectedCategoryRef = AutoDisposeProviderRef<String?>;
 String _$softwareDownloadProgressHash() =>
-    r'05f0973dd66abd4adcf7cd78f67121173a5a86b0';
+    r'5d4568597238aedcde88d9918ae04230d1b5dc58';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -292,7 +292,7 @@ class _SoftwareDownloadProgressProviderElement
 }
 
 String _$isSoftwareDownloadingHash() =>
-    r'83554ede0fbc87d82f65c21dad400abe1645237b';
+    r'c527cb3b3ef5b9846b7e916cd57ee65406f69bfa';
 
 /// Provider to check if a software is currently downloading
 ///
@@ -435,7 +435,7 @@ class _IsSoftwareDownloadingProviderElement
   String get softwareId => (origin as IsSoftwareDownloadingProvider).softwareId;
 }
 
-String _$softwareByIdHash() => r'a16110bd63bc117a9d72d9884d0e12b1a0c1f326';
+String _$softwareByIdHash() => r'ce70ceac03cec3a9bba7be9b73186830e1ab7a44';
 
 /// Provider to get a specific software by ID
 ///
@@ -577,7 +577,7 @@ class _SoftwareByIdProviderElement extends AutoDisposeProviderElement<Software?>
   String get softwareId => (origin as SoftwareByIdProvider).softwareId;
 }
 
-String _$softwareErrorHash() => r'09034a745c6498c6450b3e10f883f62f7e4aedd8';
+String _$softwareErrorHash() => r'de10d1e38647719dedbe5a99d010c138a6215c0b';
 
 /// Provider for software error state
 ///

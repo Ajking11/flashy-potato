@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/machine_detail.dart';
 import '../constants.dart';
+import '../services/image_service.dart';
 
 class MaintenanceTab extends StatefulWidget {
   final List<MaintenanceProcedure> procedures;
@@ -180,11 +181,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                   const SizedBox(height: 8),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      step.imagePath!,
+                    child: ImageService().loadAssetImage(
+                      assetPath: step.imagePath!,
                       height: 120,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                      errorWidget: (context, error, stackTrace) => const SizedBox.shrink(),
                     ),
                   ),
                 ],

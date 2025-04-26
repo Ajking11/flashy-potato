@@ -112,11 +112,13 @@ class PreferencesNotifier extends _$PreferencesNotifier {
   // Update notification preferences
   Future<void> updateNotificationPreferences({
     bool? notifyDocumentUpdates,
+    bool? notifySoftwareUpdates,
     bool? notifyImportantInfo,
   }) async {
     state = state.copyWith(
       preferences: state.preferences.copyWith(
         notifyDocumentUpdates: notifyDocumentUpdates,
+        notifySoftwareUpdates: notifySoftwareUpdates,
         notifyImportantInfo: notifyImportantInfo,
       ),
     );

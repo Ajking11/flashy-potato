@@ -8,19 +8,60 @@ import '../constants.dart';
 import '../models/machine.dart';
 import '../riverpod/notifiers/software_notifier.dart';
 import '../riverpod/notifiers/usb_transfer_notifier.dart';
-import '../riverpod/providers/usb_transfer_providers.dart';
-import '../riverpod/providers/software_providers.dart';
+import '../riverpod/providers/usb_transfer_providers.dart' as usb_transfer_providers;
+import '../riverpod/providers/software_providers.dart' as software_providers;
 
 class SoftwareDetailScreen extends ConsumerWidget {
-  final Software software;
+  final Software? software;
+  final String? softwareId;
 
   const SoftwareDetailScreen({
     super.key,
     required this.software,
-  });
+  }) : softwareId = null;
+  
+  // Named constructor for loading by ID
+  const SoftwareDetailScreen.fromId({
+    super.key,
+    required this.softwareId,
+  }) : software = null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Load software by ID if software is null
+    if (software == null && softwareId != null) {
+      // Watch the software provider to get the software with the given ID
+      final softwareData = ref.watch(software_providers.softwareByIdProvider(softwareId!));
+      
+      if (softwareData == null) {
+        // Display loading indicator while fetching data
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Loading...'),
+            backgroundColor: costaRed,
+          ),
+          body: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: costaRed),
+                SizedBox(height: 16),
+                Text('Loading software details...')
+              ],
+            ),
+          ),
+        );
+      }
+      
+      // Software found, build the UI
+      return _buildScreenWithSoftware(context, ref, softwareData);
+    }
+    
+    // Use provided software if available
+    return _buildScreenWithSoftware(context, ref, software!);
+  }
+  
+  Widget _buildScreenWithSoftware(BuildContext context, WidgetRef ref, Software software) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -324,7 +365,7 @@ class SoftwareDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16.0),
           child: Consumer(
             builder: (context, widgetRef, _) {
-              final downloadProgress = widgetRef.watch(softwareDownloadProgressProvider(software.id));
+              final downloadProgress = widgetRef.watch(software_providers.softwareDownloadProgressProvider(software.id));
               final isDownloading = downloadProgress > 0;
               
               // Use AnimatedSwitcher for smooth transitions
@@ -597,11 +638,11 @@ class UsbTransferWizard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch the state through utility providers for granular rebuilds
-    final currentStep = ref.watch(currentStepProvider(software.id));
-    final isUsbDetected = ref.watch(isUsbDetectedProvider(software.id));
-    final isTransferStarted = ref.watch(isTransferStartedProvider(software.id));
-    final isTransferComplete = ref.watch(isTransferCompleteProvider(software.id));
-    final transferProgress = ref.watch(transferProgressProvider(software.id));
+    final currentStep = ref.watch(usb_transfer_providers.currentStepProvider(software.id));
+    final isUsbDetected = ref.watch(usb_transfer_providers.isUsbDetectedProvider(software.id));
+    final isTransferStarted = ref.watch(usb_transfer_providers.isTransferStartedProvider(software.id));
+    final isTransferComplete = ref.watch(usb_transfer_providers.isTransferCompleteProvider(software.id));
+    final transferProgress = ref.watch(usb_transfer_providers.transferProgressProvider(software.id));
     // Note: no longer using individual transferStatus as we're using comprehensive statusInfo
     
     // Get the notifier to modify state
@@ -972,13 +1013,16 @@ class UsbTransferWizard extends ConsumerWidget {
                 Builder(
                   builder: (context) {
                     // Get comprehensive status info with a single watch
-                    final statusInfo = ref.watch(transferStatusInfoProvider(software.id));
-                    final hasError = statusInfo['hasError'] as bool;
-                    final isComplete = statusInfo['isComplete'] as bool;
-                    final displayColor = statusInfo['displayColor'] as Color;
-                    final iconData = statusInfo['icon'] as IconData;
-                    final statusText = statusInfo['status'] as String;
-                    final errorDetails = statusInfo['error'] as String?;
+                    // Use the prefixed provider to avoid ambiguity
+                    final statusInfo = ref.watch(usb_transfer_providers.transferStatusInfoProvider(software.id));
+                    
+                    // Access the Map values properly
+                    final bool hasError = statusInfo['hasError'] as bool;
+                    final bool isComplete = statusInfo['isComplete'] as bool;
+                    final Color displayColor = statusInfo['displayColor'] as Color;
+                    final IconData iconData = statusInfo['icon'] as IconData;
+                    final String statusText = statusInfo['status'] as String;
+                    final String? errorDetails = statusInfo['error'] as String?;
                     
                     // Determine background and border colors based on state
                     final bgColor = hasError ? Colors.red.shade50 : 
@@ -1124,7 +1168,7 @@ class UsbTransferWizard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                if (isTransferStarted && !isTransferComplete && !ref.watch(hasTransferErrorProvider(software.id)))
+                if (isTransferStarted && !isTransferComplete && !ref.watch(usb_transfer_providers.hasTransferErrorProvider(software.id)))
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

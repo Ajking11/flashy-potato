@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flutter file dialog for saving files using system APIs
 - Interactive permissions intro screen with educational content
 - Automatic permission request flow before login
+- Firebase Cloud Messaging for push notifications
+- Notification service with topic-based subscriptions
+- Document and software update notifications
+- User-configurable notification preferences
+- Image caching system for network images to reduce data usage and improve performance
 
 ### Changed
 - Updated USB Transfer wizard UI to focus on storage selection instead of detection

@@ -6,7 +6,7 @@ part of 'document_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$documentsHash() => r'69bf1b49f69ab85c7352de1dae76a3cb57fa9149';
+String _$documentsHash() => r'8d8ee2d7e47a381fc43ddaae88994cbc2ead1f79';
 
 /// Provider for accessing all documents
 ///
@@ -24,7 +24,7 @@ final documentsProvider = AutoDisposeProvider<List<TechnicalDocument>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DocumentsRef = AutoDisposeProviderRef<List<TechnicalDocument>>;
-String _$filteredDocumentsHash() => r'1d9c14c00bf58d1648ff8ffdc211ab345e3ee6f8';
+String _$filteredDocumentsHash() => r'd2ea4c34d5beed94e9abcb91818f89d2b6713402';
 
 /// Provider for accessing filtered documents
 ///
@@ -45,7 +45,7 @@ final filteredDocumentsProvider =
 // ignore: unused_element
 typedef FilteredDocumentsRef = AutoDisposeProviderRef<List<TechnicalDocument>>;
 String _$isDocumentsLoadingHash() =>
-    r'a9141199e7457e80ebfb65b17531aaed6a19ec1a';
+    r'b0ef2f8da05438879c201ac81201325eb3df5b3f';
 
 /// Provider for checking if documents are loading
 ///
@@ -65,7 +65,7 @@ final isDocumentsLoadingProvider = AutoDisposeProvider<bool>.internal(
 // ignore: unused_element
 typedef IsDocumentsLoadingRef = AutoDisposeProviderRef<bool>;
 String _$documentSearchQueryHash() =>
-    r'd98ae9ff92d22c3aa32f6ba80aa2e4bf8d084841';
+    r'32408a478d28e2724968d8d33e7404f65898e958';
 
 /// Provider for current search query
 ///
@@ -84,7 +84,7 @@ final documentSearchQueryProvider = AutoDisposeProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DocumentSearchQueryRef = AutoDisposeProviderRef<String>;
-String _$selectedMachineIdHash() => r'33612e23a0bda688453092c59b4661b0ce747080';
+String _$selectedMachineIdHash() => r'31a77445b8d794c55cffd6f053cbbc06c5ecd1ef';
 
 /// Provider for selected machine ID filter
 ///
@@ -103,7 +103,7 @@ final selectedMachineIdProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SelectedMachineIdRef = AutoDisposeProviderRef<String?>;
-String _$selectedCategoryHash() => r'f0aa4337b03b3b0df3e946d933cef1c6ea6028c6';
+String _$selectedCategoryHash() => r'dd2c7aefff07dbe3e20e37b681b7ef187f3cef9b';
 
 /// Provider for selected category filter
 ///
@@ -123,7 +123,7 @@ final selectedCategoryProvider = AutoDisposeProvider<String?>.internal(
 // ignore: unused_element
 typedef SelectedCategoryRef = AutoDisposeProviderRef<String?>;
 String _$documentDownloadProgressHash() =>
-    r'0ba0c7e1e3d4793e15807283c6d01ea56944fdb3';
+    r'692bd7cb6e8ca6e4a24fb663cd4d758ea20d5def';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -290,7 +290,7 @@ class _DocumentDownloadProgressProviderElement
 }
 
 String _$isDocumentDownloadingHash() =>
-    r'4a65369fa953ccd73be26d871f6e83b1d67033be';
+    r'465056c1ced3c99414b247fe51b5b4e2810a3ff2';
 
 /// Provider to check if a document is currently downloading
 ///
@@ -433,7 +433,7 @@ class _IsDocumentDownloadingProviderElement
   String get documentId => (origin as IsDocumentDownloadingProvider).documentId;
 }
 
-String _$documentByIdHash() => r'834c35889f7ab56e5af2f7f1d824d8509a08045a';
+String _$documentByIdHash() => r'34ca19a005235e18849a22194cd9da52ef8a4cd7';
 
 /// Provider to get a specific document by ID
 ///
@@ -576,7 +576,7 @@ class _DocumentByIdProviderElement
   String get documentId => (origin as DocumentByIdProvider).documentId;
 }
 
-String _$documentErrorHash() => r'edd8b95bee93717e52998f47bac4cb222dd590ef';
+String _$documentErrorHash() => r'c0b281e29d5c1bbf4d26d8493b93c6cd16bd057d';
 
 /// Provider for document error state
 ///

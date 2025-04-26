@@ -2,6 +2,7 @@ class UserPreferences {
   
   // Notification preferences
   final bool notifyDocumentUpdates;
+  final bool notifySoftwareUpdates;
   final bool notifyImportantInfo;
   
   // User information
@@ -19,6 +20,7 @@ class UserPreferences {
   factory UserPreferences.defaultPrefs() {
     return UserPreferences(
       notifyDocumentUpdates: true,
+      notifySoftwareUpdates: true,
       notifyImportantInfo: true,
       userEmail: null,
       isEmailConfirmed: false,
@@ -31,6 +33,7 @@ class UserPreferences {
   // Regular constructor without default values for the DateTime
   const UserPreferences({
     this.notifyDocumentUpdates = true,
+    this.notifySoftwareUpdates = true,
     this.notifyImportantInfo = true,
     this.userEmail,
     this.isEmailConfirmed = false,
@@ -42,6 +45,7 @@ class UserPreferences {
   // Create copy with updated fields
   UserPreferences copyWith({
     bool? notifyDocumentUpdates,
+    bool? notifySoftwareUpdates,
     bool? notifyImportantInfo,
     String? userEmail,
     bool? isEmailConfirmed,
@@ -51,6 +55,7 @@ class UserPreferences {
   }) {
     return UserPreferences(
       notifyDocumentUpdates: notifyDocumentUpdates ?? this.notifyDocumentUpdates,
+      notifySoftwareUpdates: notifySoftwareUpdates ?? this.notifySoftwareUpdates,
       notifyImportantInfo: notifyImportantInfo ?? this.notifyImportantInfo,
       userEmail: userEmail ?? this.userEmail,
       isEmailConfirmed: isEmailConfirmed ?? this.isEmailConfirmed,
@@ -64,6 +69,7 @@ class UserPreferences {
   Map<String, dynamic> toJson() {
     return {
       'notifyDocumentUpdates': notifyDocumentUpdates,
+      'notifySoftwareUpdates': notifySoftwareUpdates,
       'notifyImportantInfo': notifyImportantInfo,
       'userEmail': userEmail,
       'isEmailConfirmed': isEmailConfirmed,
@@ -76,6 +82,7 @@ class UserPreferences {
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
     return UserPreferences(
       notifyDocumentUpdates: json['notifyDocumentUpdates'] ?? true,
+      notifySoftwareUpdates: json['notifySoftwareUpdates'] ?? true,
       notifyImportantInfo: json['notifyImportantInfo'] ?? true,
       userEmail: json['userEmail'],
       isEmailConfirmed: json['isEmailConfirmed'] ?? false,

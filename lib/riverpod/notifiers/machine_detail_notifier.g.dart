@@ -7,7 +7,7 @@ part of 'machine_detail_notifier.dart';
 // **************************************************************************
 
 String _$machineDetailNotifierHash() =>
-    r'ec6ff74895c96613901a4adf2ca5078b06d5eb30';
+    r'a25c0195a7653186158e276615c7aa40e064d6a4';
 
 /// Copied from Dart SDK
 class _SystemHash {

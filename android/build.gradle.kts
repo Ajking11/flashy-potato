@@ -4,7 +4,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.9.0") // Update to the latest version
+        classpath("com.android.tools.build:gradle:8.9.0")
+        classpath("com.google.gms:google-services:4.4.1")
     }
 }
 
@@ -15,10 +16,23 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
-    project.evaluationDependsOn(":app")
+    if (project.name != "app" && rootProject.allprojects.any { it.name == "app" }) {
+        project.evaluationDependsOn(":app")
+    }
 }
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+rootProject.afterEvaluate {
+    subprojects.forEach { subproject ->
+        if (subproject.plugins.hasPlugin("com.android.library")) {
+            subproject.extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+                compileSdk = 35
+            }
+        }
+    }
 }

@@ -13,6 +13,7 @@ build/
 lib/generated_plugin_registrant.dart
 coverage/
 pubspec.lock
+firebase.json
 
 # Files and directories created by dart2js
 *.dart.js
@@ -42,6 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/key.properties
+/android/app/upload-keystore.jks
+/android/upload-keystore.jks
+/upload-keystore.jks
+/upload-keystore.jks
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -196,3 +202,11 @@ nbdist/
 .\#*
 *.elc
 auto-save-list/
+
+# Other IDEs
+FLUTTER_FCM_INTEGRATION.md
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/

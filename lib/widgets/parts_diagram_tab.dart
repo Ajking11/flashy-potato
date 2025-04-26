@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/machine_detail.dart';
 import '../constants.dart';
+import '../services/image_service.dart';
 
 class PartsDiagramTab extends StatefulWidget {
   final List<PartDiagram> diagrams;
@@ -161,10 +162,10 @@ class _PartsDiagramTabState extends State<PartsDiagramTab> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  currentDiagram.imagePath,
+                child: ImageService().loadAssetImage(
+                  assetPath: currentDiagram.imagePath,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Center(
+                  errorWidget: (context, error, stackTrace) => Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

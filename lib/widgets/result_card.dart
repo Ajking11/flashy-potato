@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'expanded_filter_details.dart';
 import '../constants.dart';
+import '../services/image_service.dart';
 
 class ResultCard extends StatelessWidget {
   final List<dynamic> filteredData;
@@ -153,12 +154,11 @@ class ResultCard extends StatelessWidget {
             ],
           ),
           padding: const EdgeInsets.all(8),
-          child: Image.asset(
-            'assets/images/${filterSize.toLowerCase()}.png',
+          child: ImageService().loadAssetImage(
+            assetPath: 'assets/images/${filterSize.toLowerCase()}.png',
             fit: BoxFit.contain,
             height: 120,
-            semanticLabel: '${item['type']} filter, size $filterSize',
-            errorBuilder: (context, error, stackTrace) => Container(
+            errorWidget: (context, error, stackTrace) => Container(
               height: 120,
               width: 80,
               color: Colors.grey[200],
@@ -272,12 +272,11 @@ class ResultCard extends StatelessWidget {
               ],
             ),
             padding: const EdgeInsets.all(12),
-            child: Image.asset(
-              'assets/images/${filterSize.toLowerCase()}.png',
+            child: ImageService().loadAssetImage(
+              assetPath: 'assets/images/${filterSize.toLowerCase()}.png',
               fit: BoxFit.contain,
               height: 120,
-              semanticLabel: '${item['type']} filter, size $filterSize',
-              errorBuilder: (context, error, stackTrace) => Container(
+              errorWidget: (context, error, stackTrace) => Container(
                 height: 120,
                 width: 80,
                 color: Colors.grey[200],

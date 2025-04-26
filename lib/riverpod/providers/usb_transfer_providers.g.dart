@@ -6,7 +6,7 @@ part of 'usb_transfer_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentStepHash() => r'8e1a94e21eb403a6d6dee7791fdcf41e50b03fcd';
+String _$currentStepHash() => r'2897a787f2d9d0a019cded7b3fdcd9ed18d02382';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -157,7 +157,7 @@ class _CurrentStepProviderElement extends AutoDisposeProviderElement<int>
   String get softwareId => (origin as CurrentStepProvider).softwareId;
 }
 
-String _$isUsbDetectedHash() => r'dfc85bbdbd8305c7290be549cb03f6ecfe2c7933';
+String _$isUsbDetectedHash() => r'ea0a0e3dc3b4dd44e5bdac9a642ff0e6691423ba';
 
 /// See also [isUsbDetected].
 @ProviderFor(isUsbDetected)
@@ -287,7 +287,7 @@ class _IsUsbDetectedProviderElement extends AutoDisposeProviderElement<bool>
   String get softwareId => (origin as IsUsbDetectedProvider).softwareId;
 }
 
-String _$isTransferStartedHash() => r'573e1211b4ecde691b220a30b1352600a48008c0';
+String _$isTransferStartedHash() => r'6cfc5b3fe514787250b22d2ea9a6a2c824d18593';
 
 /// See also [isTransferStarted].
 @ProviderFor(isTransferStarted)
@@ -418,7 +418,7 @@ class _IsTransferStartedProviderElement extends AutoDisposeProviderElement<bool>
 }
 
 String _$isTransferCompleteHash() =>
-    r'5a54932e974c61fbb72107b6ed56d254300112a4';
+    r'af419f9ce7dd8662fffa71d00a7580c6a534e88d';
 
 /// See also [isTransferComplete].
 @ProviderFor(isTransferComplete)
@@ -549,7 +549,7 @@ class _IsTransferCompleteProviderElement
   String get softwareId => (origin as IsTransferCompleteProvider).softwareId;
 }
 
-String _$transferProgressHash() => r'd540b1080ac0ccbc033036bc477f9690c73f05d9';
+String _$transferProgressHash() => r'1e1ffec49fb40c458367ee312f23516f5dcb7a07';
 
 /// See also [transferProgress].
 @ProviderFor(transferProgress)
@@ -679,7 +679,7 @@ class _TransferProgressProviderElement
   String get softwareId => (origin as TransferProgressProvider).softwareId;
 }
 
-String _$transferStatusHash() => r'1ab8c0c15e68e3f07df8a201ffef2eeb77a2b15d';
+String _$transferStatusHash() => r'b893bc72dec05e1ecb8a8c679b848b208d9294b0';
 
 /// See also [transferStatus].
 @ProviderFor(transferStatus)
@@ -809,7 +809,7 @@ class _TransferStatusProviderElement extends AutoDisposeProviderElement<String>
   String get softwareId => (origin as TransferStatusProvider).softwareId;
 }
 
-String _$transferErrorHash() => r'0a6af58c9f7b2678610c4786b279f14a1b880f22';
+String _$transferErrorHash() => r'f9ff09bce5ccbb592499d52eabc278b4da501475';
 
 /// See also [transferError].
 @ProviderFor(transferError)
@@ -939,7 +939,7 @@ class _TransferErrorProviderElement extends AutoDisposeProviderElement<String?>
   String get softwareId => (origin as TransferErrorProvider).softwareId;
 }
 
-String _$hasTransferErrorHash() => r'dbd816d5c610fc6bc2167145859973c8456b4cfe';
+String _$hasTransferErrorHash() => r'363eb9c069d1d99bf06227b6c06099dc4d4ba240';
 
 /// See also [hasTransferError].
 @ProviderFor(hasTransferError)
@@ -1070,7 +1070,7 @@ class _HasTransferErrorProviderElement extends AutoDisposeProviderElement<bool>
 }
 
 String _$transferStatusInfoHash() =>
-    r'953540742f3592a8009f8116d776833b42744fd6';
+    r'24e55d9b28e88411e9fd3ae19b9e5135ca05b8f3';
 
 /// See also [transferStatusInfo].
 @ProviderFor(transferStatusInfo)

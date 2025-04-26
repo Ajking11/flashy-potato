@@ -1,8 +1,8 @@
 // lib/services/permissions_service.dart
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'logger_service.dart';
 
 /// Service to handle app permissions and initial permission requests
 class PermissionsService {
@@ -65,7 +65,7 @@ class PermissionsService {
         try {
           permissionsToRequest.add(Permission.manageExternalStorage);
         } catch (e) {
-          debugPrint('Error adding manageExternalStorage permission: $e');
+          logger.e('PermissionsService', 'Error adding manageExternalStorage permission', e);
         }
       }
     }
@@ -97,7 +97,7 @@ class PermissionsService {
           results[Permission.manageExternalStorage] = 
               await Permission.manageExternalStorage.status;
         } catch (e) {
-          debugPrint('Error checking manageExternalStorage status: $e');
+          logger.e('PermissionsService', 'Error checking manageExternalStorage status', e);
         }
       }
     }

@@ -7,12 +7,18 @@ import '../riverpod/notifiers/preferences_notifier.dart';
 // import '../riverpod/providers/preferences_providers.dart';
 import '../constants.dart';
 import '../services/session_manager.dart';
+import '../services/notification_service.dart';
 
-class PreferencesScreen extends ConsumerWidget {
+class PreferencesScreen extends ConsumerStatefulWidget {
   const PreferencesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PreferencesScreen> createState() => _PreferencesScreenState();
+}
+
+class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
+  @override
+  Widget build(BuildContext context) {
     final preferencesState = ref.watch(preferencesNotifierProvider);
     final preferencesNotifier = ref.watch(preferencesNotifierProvider.notifier);
     
@@ -98,36 +104,90 @@ class PreferencesScreen extends ConsumerWidget {
                   margin: const EdgeInsets.only(bottom: 24),
                   child: Column(
                     children: [
-                      SwitchListTile(
-                        title: const Text('Document Updates'),
-                        subtitle: const Text(
-                            'Get notified when documents are updated'),
-                        value: preferencesState.preferences.notifyDocumentUpdates,
-                        onChanged: (value) {
-                          preferencesNotifier.updateNotificationPreferences(
-                            notifyDocumentUpdates: value,
+                      FutureBuilder<bool>(
+                        future: notificationService.areNotificationsEnabled(),
+                        builder: (context, snapshot) {
+                          final bool notificationsEnabled = snapshot.data ?? true;
+                          return SwitchListTile(
+                            title: const Text('Enable Notifications'),
+                            subtitle: const Text(
+                                'Turn on/off all notifications for this app'),
+                            value: notificationsEnabled,
+                            onChanged: (value) async {
+                              if (value) {
+                                await notificationService.enableNotifications();
+                              } else {
+                                await notificationService.disableNotifications();
+                              }
+                              // Force rebuild
+                              setState(() {});
+                            },
+                            secondary: const Icon(
+                              Icons.notifications_active_outlined,
+                              color: costaRed,
+                            ),
                           );
                         },
-                        secondary: const Icon(
-                          Icons.article_outlined,
-                          color: costaRed,
-                        ),
                       ),
                       const Divider(height: 1),
-                      SwitchListTile(
-                        title: const Text('Important Information'),
-                        subtitle: const Text(
-                            'Get notified about important FSE information'),
-                        value: preferencesState.preferences.notifyImportantInfo,
-                        onChanged: (value) {
-                          preferencesNotifier.updateNotificationPreferences(
-                            notifyImportantInfo: value,
+                      FutureBuilder<bool>(
+                        future: notificationService.areDocumentNotificationsEnabled(),
+                        builder: (context, snapshot) {
+                          final bool documentNotificationsEnabled = snapshot.data ?? true;
+                          return SwitchListTile(
+                            title: const Text('Document Updates'),
+                            subtitle: const Text(
+                                'Get notified when documents are updated'),
+                            value: documentNotificationsEnabled,
+                            onChanged: (value) async {
+                              if (value) {
+                                await notificationService.subscribeToDocumentUpdates();
+                              } else {
+                                await notificationService.unsubscribeFromDocumentUpdates();
+                              }
+                              // Update preferences too to maintain consistency
+                              preferencesNotifier.updateNotificationPreferences(
+                                notifyDocumentUpdates: value,
+                              );
+                              // Force rebuild
+                              setState(() {});
+                            },
+                            secondary: const Icon(
+                              Icons.article_outlined,
+                              color: costaRed,
+                            ),
                           );
-                        },
-                        secondary: const Icon(
-                          Icons.info_outline,
-                          color: costaRed,
-                        ),
+                        }
+                      ),
+                      const Divider(height: 1),
+                      FutureBuilder<bool>(
+                        future: notificationService.areSoftwareNotificationsEnabled(),
+                        builder: (context, snapshot) {
+                          final bool softwareNotificationsEnabled = snapshot.data ?? true;
+                          return SwitchListTile(
+                            title: const Text('Software Updates'),
+                            subtitle: const Text(
+                                'Get notified about new software updates'),
+                            value: softwareNotificationsEnabled,
+                            onChanged: (value) async {
+                              if (value) {
+                                await notificationService.subscribeToSoftwareUpdates();
+                              } else {
+                                await notificationService.unsubscribeFromSoftwareUpdates();
+                              }
+                              // Update preferences too to maintain consistency
+                              preferencesNotifier.updateNotificationPreferences(
+                                notifySoftwareUpdates: value,
+                              );
+                              // Force rebuild
+                              setState(() {});
+                            },
+                            secondary: const Icon(
+                              Icons.system_update_outlined,
+                              color: costaRed,
+                            ),
+                          );
+                        }
                       ),
                     ],
                   ),

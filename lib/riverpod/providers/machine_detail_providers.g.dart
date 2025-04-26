@@ -7,7 +7,7 @@ part of 'machine_detail_providers.dart';
 // **************************************************************************
 
 String _$isMachineDetailLoadingHash() =>
-    r'fe6d4621f76067b733901c8f406233564e6b2dfb';
+    r'96c7061177acde0488229fa26727c4499b044b72';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -171,7 +171,7 @@ class _IsMachineDetailLoadingProviderElement
   String get machineId => (origin as IsMachineDetailLoadingProvider).machineId;
 }
 
-String _$machineDetailHash() => r'c4973b30ca33d2869591f7a5484099d5211da795';
+String _$machineDetailHash() => r'8ccbd2de9682f9d53d608478f66e54c6178876b3';
 
 /// Provider for accessing machine details
 ///
@@ -314,7 +314,7 @@ class _MachineDetailProviderElement
 }
 
 String _$machineDetailErrorHash() =>
-    r'f6d32822ae1a112daa4718461a6df8c57e8cd6fd';
+    r'fe08d291e8ebed024e57cfa22c599491c9627483';
 
 /// Provider for machine detail error state
 ///
