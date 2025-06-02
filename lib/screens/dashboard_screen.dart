@@ -4,15 +4,19 @@ import 'package:go_router/go_router.dart';
 import '../constants.dart';
 import '../services/logger_service.dart';
 import '../widgets/fade_animation.dart';
+import '../models/document.dart';
+import '../models/software.dart';
 import '../riverpod/providers/document_providers.dart';
+import '../riverpod/providers/software_providers.dart';
 import '../riverpod/notifiers/document_notifier.dart';
+import '../riverpod/notifiers/software_notifier.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allDocuments = _safelyGetDocuments(ref);
+    final recentUploads = _getRecentUploads(ref);
     
     return Scaffold(
       appBar: AppBar(
@@ -50,11 +54,11 @@ class DashboardScreen extends ConsumerWidget {
                   child: _buildQuickActionsGrid(context),
                 ),
                 const SizedBox(height: 16),
-                if (allDocuments.isNotEmpty) ...[
+                if (recentUploads.isNotEmpty) ...[
                   _buildSection(
-                    title: 'Recent Documents',
+                    title: 'Recent Uploads',
                     delay: const Duration(milliseconds: 400),
-                    child: _buildRecentDocumentsCard(context, ref),
+                    child: _buildRecentUploadsCard(context, ref),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -69,11 +73,46 @@ class DashboardScreen extends ConsumerWidget {
 
   List<dynamic> _safelyGetDocuments(WidgetRef ref) {
     try {
-      return ref.watch(documentsProvider);
+      final documents = ref.watch(documentsProvider);
+      return documents;
     } catch (e) {
       logger.e('DashboardScreen', 'Error accessing documents provider', e);
       return [];
     }
+  }
+
+  List<dynamic> _safelyGetSoftware(WidgetRef ref) {
+    try {
+      final software = ref.watch(softwareListProvider);
+      return software;
+    } catch (e) {
+      logger.e('DashboardScreen', 'Error accessing software provider', e);
+      return [];
+    }
+  }
+
+  List<dynamic> _getRecentUploads(WidgetRef ref) {
+    final documents = _safelyGetDocuments(ref);
+    final software = _safelyGetSoftware(ref);
+    
+    // Combine documents and software into a single list
+    final List<dynamic> combined = [...documents, ...software];
+    
+    // Sort by upload/release date (most recent first)
+    if (combined.isNotEmpty) {
+      combined.sort((a, b) {
+        final DateTime aDate = a is TechnicalDocument 
+            ? a.uploadDate 
+            : (a as Software).releaseDate;
+        final DateTime bDate = b is TechnicalDocument 
+            ? b.uploadDate 
+            : (b as Software).releaseDate;
+        return bDate.compareTo(aDate);
+      });
+    }
+    
+    // Return the 3 most recent
+    return combined.take(3).toList();
   }
 
   Widget _buildSection({
@@ -300,27 +339,49 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentDocumentsCard(BuildContext context, WidgetRef ref) {
-    final allDocuments = _safelyGetDocuments(ref);
-    final recentDocs = allDocuments.isNotEmpty 
-        ? allDocuments.take(3).toList() 
-        : [];
+  Widget _buildRecentUploadsCard(BuildContext context, WidgetRef ref) {
+    final recentUploads = _getRecentUploads(ref);
+    final isDocumentsLoading = ref.watch(isDocumentsLoadingProvider);
+    final isSoftwareLoading = ref.watch(isSoftwareLoadingProvider);
     
-    if (recentDocs.isEmpty) {
-      return _buildEmptyDocumentsCard(context);
+    // Show loading if either is still loading
+    if (isDocumentsLoading || isSoftwareLoading) {
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: EdgeInsets.zero,
+        child: const Padding(
+          padding: EdgeInsets.all(40),
+          child: Center(
+            child: Column(
+              children: [
+                CircularProgressIndicator(color: costaRed),
+                SizedBox(height: 16),
+                Text('Loading recent uploads...'),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     
-    final List<Widget> documentItems = [];
+    if (recentUploads.isEmpty) {
+      return _buildEmptyUploadsCard(context);
+    }
     
-    for (int i = 0; i < recentDocs.length; i++) {
-      final doc = recentDocs[i];
+    final List<Widget> uploadItems = [];
+    
+    for (int i = 0; i < recentUploads.length; i++) {
+      final item = recentUploads[i];
       
-      documentItems.add(
-        _buildDocumentItem(context, ref, doc),
+      uploadItems.add(
+        _buildUploadItem(context, ref, item),
       );
       
-      if (i < recentDocs.length - 1) {
-        documentItems.add(const Divider(height: 1));
+      if (i < recentUploads.length - 1) {
+        uploadItems.add(const Divider(height: 1));
       }
     }
     
@@ -333,107 +394,15 @@ class DashboardScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ...documentItems,
-          _buildViewAllDocumentsButton(context),
+          ...uploadItems,
+          _buildViewAllButton(context),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyDocumentsCard(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: 48,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'No recent documents',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Access documents from the Documents section',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => context.go('/documents'),
-              icon: const Icon(Icons.folder_outlined, size: 16),
-              label: const Text('Browse Documents'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: costaRed,
-                side: const BorderSide(color: costaRed),
-                minimumSize: const Size(150, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildDocumentItem(BuildContext context, WidgetRef ref, dynamic doc) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(
-          Icons.picture_as_pdf,
-          color: Colors.blue,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        doc.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-      subtitle: Text(
-        doc.description,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: IconButton(
-        icon: Icon(
-          doc.isDownloaded ? Icons.check_circle : Icons.download_outlined,
-          color: doc.isDownloaded ? Colors.green : Colors.grey,
-          size: 20,
-        ),
-        onPressed: () => _handleDocumentDownload(context, ref, doc),
-        constraints: const BoxConstraints(
-          maxHeight: 32,
-          maxWidth: 32,
-        ),
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
+
 
   void _handleDocumentDownload(BuildContext context, WidgetRef ref, dynamic doc) {
     if (doc.isDownloaded) {
@@ -462,6 +431,159 @@ class DashboardScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  void _handleSoftwareDownload(BuildContext context, WidgetRef ref, dynamic software) {
+    if (software.isDownloaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Software already downloaded'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      try {
+        ref.read(softwareNotifierProvider.notifier).downloadSoftware(software.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Software downloaded for offline use'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        logger.e('DashboardScreen', 'Error downloading software', e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading software: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildUploadItem(BuildContext context, WidgetRef ref, dynamic item) {
+    final bool isDocument = item is TechnicalDocument;
+    
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDocument 
+              ? Colors.blue.withValues(alpha: 0.1)
+              : Colors.purple.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          isDocument ? Icons.picture_as_pdf : Icons.memory,
+          color: isDocument ? Colors.blue : Colors.purple,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        isDocument ? item.title : item.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+      subtitle: Text(
+        '${isDocument ? 'Document' : 'Software'}: ${isDocument ? item.description : item.description}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: IconButton(
+        icon: Icon(
+          item.isDownloaded ? Icons.check_circle : Icons.download_outlined,
+          color: item.isDownloaded ? Colors.green : Colors.grey,
+          size: 20,
+        ),
+        onPressed: () => isDocument 
+            ? _handleDocumentDownload(context, ref, item)
+            : _handleSoftwareDownload(context, ref, item),
+        constraints: const BoxConstraints(
+          maxHeight: 32,
+          maxWidth: 32,
+        ),
+      ),
+      onTap: () {
+        if (isDocument) {
+          context.go('/documents/${item.id}');
+        } else {
+          context.go('/software/${item.id}');
+        }
+      },
+    );
+  }
+
+  Widget _buildEmptyUploadsCard(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Icon(
+              Icons.upload_file,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No recent uploads',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Documents and software will appear here when uploaded',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewAllButton(BuildContext context) {
+    return InkWell(
+      onTap: () => context.go('/documents'), // Default to documents, could make this smarter
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+        ),
+        child: const Center(
+          child: Text(
+            'View All Content',
+            style: TextStyle(
+              color: costaRed,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildViewAllDocumentsButton(BuildContext context) {

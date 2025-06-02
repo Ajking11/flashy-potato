@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/software.dart';
 import '../models/machine.dart';
 import '../riverpod/notifiers/software_notifier.dart';
 import '../riverpod/providers/software_providers.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
-import 'software_detail_screen.dart';
 
 class SoftwareRepositoryScreen extends ConsumerStatefulWidget {
   final String? initialMachineId; // Optional: to pre-filter by machine
@@ -1169,12 +1169,8 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
   // Open/handle the software
   void _openSoftware(Software software) {
     try {
-      // Instead of showing a dialog, navigate to a full-screen page
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => SoftwareDetailScreen(software: software),
-        ),
-      );
+      // Navigate using GoRouter
+      context.go('/software/${software.id}');
     } catch (e) {
       // Handle any exceptions safely to prevent crashes
       ScaffoldMessenger.of(context).showSnackBar(

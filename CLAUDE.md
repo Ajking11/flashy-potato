@@ -25,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Ensure type safety - avoid dynamic types when possible
 - Include descriptive comments for complex logic
 - Reference issue numbers where applicable
+- withOpacity has been deprecated in Flutter 3.27.0
 
 ### Project Structure
 - Place screens in lib/screens/, widgets in lib/widgets/, models in lib/models/

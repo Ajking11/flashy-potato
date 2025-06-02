@@ -153,7 +153,6 @@ class AppRouter {
               GoRoute(
                 path: ':softwareId',
                 name: 'software-detail',
-                parentNavigatorKey: _rootNavigatorKey,
                 builder: (context, state) {
                   final softwareId = state.pathParameters['softwareId']!;
                   return SoftwareDetailScreen.fromId(softwareId: softwareId);
@@ -236,21 +235,23 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    // Use the root navigator to ensure we're navigating from the correct context
+    final router = GoRouter.of(context);
     switch (index) {
       case 0:
-        GoRouter.of(context).go('/');
+        router.go('/');
         break;
       case 1:
-        GoRouter.of(context).go('/filters');
+        router.go('/filters');
         break;
       case 2:
-        GoRouter.of(context).go('/machines');
+        router.go('/machines');
         break;
       case 3:
-        GoRouter.of(context).go('/documents');
+        router.go('/documents');
         break;
       case 4:
-        GoRouter.of(context).go('/software');
+        router.go('/software');
         break;
     }
   }

@@ -614,12 +614,19 @@ class SoftwareDetailScreen extends ConsumerWidget {
   // Shows an interactive USB loading wizard using Riverpod for state management
   void _showUsbLoadingDialog(BuildContext context, Software software) {
     // Launch the USB transfer wizard with the software
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ProviderScope(
-          // No need for explicit overrides since we're passing the software ID
-          // as a parameter to the provider inside the UsbTransferWizard
-          child: UsbTransferWizard(software: software),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      enableDrag: false,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => ProviderScope(
+          child: UsbTransferWizard(
+            software: software,
+            scrollController: scrollController,
+          ),
         ),
       ),
     );
@@ -629,10 +636,12 @@ class SoftwareDetailScreen extends ConsumerWidget {
 // USB Transfer Wizard Screen with Riverpod
 class UsbTransferWizard extends ConsumerWidget {
   final Software software;
+  final ScrollController? scrollController;
   
   const UsbTransferWizard({
     super.key,
     required this.software,
+    this.scrollController,
   });
 
   @override
@@ -648,47 +657,80 @@ class UsbTransferWizard extends ConsumerWidget {
     // Get the notifier to modify state
     final notifier = ref.read(usbTransferNotifierProvider(software.id).notifier);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('USB Transfer Wizard'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
-            // Show confirmation dialog if transfer is in progress
-            if (isTransferStarted && !isTransferComplete) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Cancel Transfer?'),
-                  content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Continue Transfer'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Close wizard
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Cancel Transfer'),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              Navigator.pop(context);
-            }
-          },
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
       ),
-      body: Stepper(
+      child: Column(
+        children: [
+          // Header with close button
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'USB Transfer Wizard',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () {
+                    // Show confirmation dialog if transfer is in progress
+                    if (isTransferStarted && !isTransferComplete) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Cancel Transfer?'),
+                          content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Continue Transfer'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close dialog
+                                Navigator.pop(context); // Close bottom sheet
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Cancel Transfer'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Stepper(
         currentStep: currentStep,
         onStepContinue: () {
           // Handle step-specific actions with improved async management
@@ -1290,6 +1332,10 @@ class UsbTransferWizard extends ConsumerWidget {
             ),
             isActive: currentStep == 2,
             state: isTransferComplete ? StepState.complete : StepState.indexed,
+          ),
+        ],
+              ),
+            ),
           ),
         ],
       ),

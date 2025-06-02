@@ -205,8 +205,10 @@ auto-save-list/
 
 # Other IDEs
 FLUTTER_FCM_INTEGRATION.md
+FUTURE.md
 .idea/
 *.iml
 *.ipr
 *.iws
 .idea_modules/
+**/.claude/settings.local.json
