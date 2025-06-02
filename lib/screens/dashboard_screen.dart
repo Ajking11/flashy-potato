@@ -586,32 +586,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildViewAllDocumentsButton(BuildContext context) {
-    return InkWell(
-      onTap: () => context.go('/documents'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: const BoxDecoration(
-          color: Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            'View All Documents',
-            style: TextStyle(
-              color: costaRed,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _QuickAction {
