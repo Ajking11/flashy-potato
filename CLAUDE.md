@@ -2,9 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Costa FSE Toolbox - Flutter App Guidelines
+## Costa FSE Toolbox - Flutter App Guidelines
 
 ## Build Commands
+
 - Install dependencies: `flutter pub get`
 - Generate Riverpod code: `flutter pub run build_runner build --delete-conflicting-outputs`
 - Run app: `flutter run`
@@ -14,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Build release: `flutter build apk` (Android) or `flutter build ios` (iOS)
 
 ## Code Style
+
 - Follow Flutter's official style guide and linter rules in analysis_options.yaml
 - Use named parameters for widgets and functions
 - Organize imports: Dart imports first, package imports second, local imports last
@@ -28,5 +30,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - withOpacity has been deprecated in Flutter 3.27.0
 
 ### Project Structure
+
 - Place screens in lib/screens/, widgets in lib/widgets/, models in lib/models/
 - Store Riverpod code in lib/riverpod/ (states, notifiers, providers)

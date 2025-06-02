@@ -5,7 +5,6 @@ import '../constants.dart';
 import '../services/logger_service.dart';
 import '../widgets/fade_animation.dart';
 import '../models/document.dart';
-import '../models/software.dart';
 import '../riverpod/providers/document_providers.dart';
 import '../riverpod/providers/software_providers.dart';
 import '../riverpod/notifiers/document_notifier.dart';
@@ -98,15 +97,11 @@ class DashboardScreen extends ConsumerWidget {
     // Combine documents and software into a single list
     final List<dynamic> combined = [...documents, ...software];
     
-    // Sort by upload/release date (most recent first)
+    // Sort by uploadDate (most recent first) - both types use uploadDate
     if (combined.isNotEmpty) {
       combined.sort((a, b) {
-        final DateTime aDate = a is TechnicalDocument 
-            ? a.uploadDate 
-            : (a as Software).releaseDate;
-        final DateTime bDate = b is TechnicalDocument 
-            ? b.uploadDate 
-            : (b as Software).releaseDate;
+        final DateTime aDate = a.uploadDate;
+        final DateTime bDate = b.uploadDate;
         return bDate.compareTo(aDate);
       });
     }

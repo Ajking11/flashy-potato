@@ -131,7 +131,7 @@ class SoftwareNotifier extends _$SoftwareNotifier {
       }
       
       // Otherwise, process Firebase software list
-      softwareList.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
+      softwareList.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
       
       // Set basic state first with the software list
       state = state.copyWith(
@@ -210,7 +210,7 @@ class SoftwareNotifier extends _$SoftwareNotifier {
       final softwareList = await _softwareService?.getAllSoftware() ?? [];
       
       // Sort software by most recent first
-      softwareList.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
+      softwareList.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
       
       // Restore download status from before refresh
       final updatedSoftwareList = softwareList.map((software) {
@@ -280,7 +280,7 @@ class SoftwareNotifier extends _$SoftwareNotifier {
       }
       
       // Sort software by most recent first
-      softwareList.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
+      softwareList.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
       
       // Update state with loaded software
       state = state.copyWith(

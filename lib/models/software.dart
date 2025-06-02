@@ -7,7 +7,7 @@ class Software {
   final String category;
   final String filePath; // Path to the software package in Firebase Storage
   final String? downloadURL; // Direct download URL
-  final DateTime releaseDate;
+  final DateTime uploadDate;
   final int fileSizeKB;
   final bool isDownloaded; // Track if the software is available offline
   final List<String> tags; // For searching
@@ -32,7 +32,7 @@ class Software {
     required this.category,
     required this.filePath,
     this.downloadURL,
-    required this.releaseDate,
+    required this.uploadDate,
     required this.fileSizeKB,
     this.isDownloaded = false,
     this.tags = const [],
@@ -69,9 +69,9 @@ class Software {
       category: json['category'],
       filePath: json['filePath'],
       downloadURL: json['downloadURL'],
-      releaseDate: json['releaseDate'] is String
-          ? DateTime.parse(json['releaseDate'])
-          : (json['releaseDate'] as DateTime?) ?? DateTime.now(),
+      uploadDate: json['uploadDate'] is String
+          ? DateTime.parse(json['uploadDate'])
+          : (json['uploadDate'] as DateTime?) ?? DateTime.now(),
       fileSizeKB: json['fileSizeKB'] ?? 0,
       isDownloaded: json['isDownloaded'] ?? false,
       tags: List<String>.from(json['tags'] ?? []),
@@ -89,17 +89,17 @@ class Software {
   // Factory constructor to create from Firestore document
   factory Software.fromFirestore(Map<String, dynamic> doc, String docId) {
     // Handle the Timestamp type from Firestore
-    DateTime releaseDate;
-    if (doc['releaseDate'] is DateTime) {
-      releaseDate = doc['releaseDate'];
-    } else if (doc['releaseDate'] != null) {
+    DateTime uploadDate;
+    if (doc['uploadDate'] is DateTime) {
+      uploadDate = doc['uploadDate'];
+    } else if (doc['uploadDate'] != null) {
       try {
-        releaseDate = doc['releaseDate'].toDate();
+        uploadDate = doc['uploadDate'].toDate();
       } catch (e) {
-        releaseDate = DateTime.now();
+        uploadDate = DateTime.now();
       }
     } else {
-      releaseDate = DateTime.now();
+      uploadDate = DateTime.now();
     }
 
     // Handle different ways machines can be stored (array, single string, or null)
@@ -163,7 +163,7 @@ class Software {
       category: category,
       filePath: doc['filePath'] ?? '',
       downloadURL: doc['downloadURL'],
-      releaseDate: releaseDate,
+      uploadDate: uploadDate,
       fileSizeKB: fileSizeKB,
       isDownloaded: doc['isDownloaded'] ?? false,
       uploadedBy: doc['uploadedBy'],
@@ -188,7 +188,7 @@ class Software {
       'category': category,
       'filePath': filePath,
       'downloadURL': downloadURL,
-      'releaseDate': releaseDate.toIso8601String(),
+      'uploadDate': uploadDate.toIso8601String(),
       'fileSizeKB': fileSizeKB,
       'isDownloaded': isDownloaded,
       'tags': tags,
@@ -213,7 +213,7 @@ class Software {
     String? category,
     String? filePath,
     String? downloadURL,
-    DateTime? releaseDate,
+    DateTime? uploadDate,
     int? fileSizeKB,
     bool? isDownloaded,
     List<String>? tags,
@@ -235,7 +235,7 @@ class Software {
       category: category ?? this.category,
       filePath: filePath ?? this.filePath,
       downloadURL: downloadURL ?? this.downloadURL,
-      releaseDate: releaseDate ?? this.releaseDate,
+      uploadDate: uploadDate ?? this.uploadDate,
       fileSizeKB: fileSizeKB ?? this.fileSizeKB,
       isDownloaded: isDownloaded ?? this.isDownloaded,
       tags: tags ?? this.tags,

@@ -274,7 +274,7 @@ class SoftwareDetailScreen extends ConsumerWidget {
                         _buildDetailRow(
                           Icons.calendar_today_outlined,
                           'Released',
-                          _formatDate(software.releaseDate),
+                          _formatDate(software.uploadDate),
                         ),
                         if (software.uploadedBy != null && software.uploadedBy!.isNotEmpty) ...[
                           const Divider(),

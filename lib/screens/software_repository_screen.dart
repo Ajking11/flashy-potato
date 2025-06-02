@@ -870,7 +870,7 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _formatDate(software.releaseDate),
+                        _formatDate(software.uploadDate),
                         style: CostaTextStyle.caption,
                       ),
                       
