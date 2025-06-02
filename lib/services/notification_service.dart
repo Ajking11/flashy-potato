@@ -4,12 +4,15 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../navigation/app_router.dart';
+import '../riverpod/notifiers/document_notifier.dart';
+import '../riverpod/notifiers/software_notifier.dart';
 import 'logger_service.dart';
 
 class NotificationService {
@@ -154,6 +157,16 @@ class NotificationService {
       playSound: true,
     );
     
+    // Downloads channel for auto-download notifications
+    const AndroidNotificationChannel downloadsChannel = AndroidNotificationChannel(
+      'downloads_channel',
+      'Downloads',
+      description: 'Download progress notifications',
+      importance: Importance.low,
+      enableVibration: false,
+      playSound: false,
+    );
+    
     // Create notification channels one by one
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -162,6 +175,7 @@ class NotificationService {
       await androidPlugin.createNotificationChannel(documentsChannel);
       await androidPlugin.createNotificationChannel(softwareChannel);
       await androidPlugin.createNotificationChannel(highImportanceChannel);
+      await androidPlugin.createNotificationChannel(downloadsChannel);
       
       // Request notification permission for Android 13+ (API level 33+)
       // Note: This method requires flutter_local_notifications >= 9.0.0
@@ -251,13 +265,30 @@ class NotificationService {
         final data = jsonDecode(payload) as Map<String, dynamic>;
         logger.i(_tag, 'Notification tapped with data: $data');
         
+        // Check for auto-download flag
+        final bool autoDownload = data['autoDownload'] == true || data['auto_download'] == true;
+        
         // Navigation to correct screen based on notification type
         if (data['type'] == 'document' && data['documentId'] != null) {
-          // Navigate to document details screen
-          AppRouter.router.push('/documents/${data['documentId']}');
+          if (autoDownload) {
+            // Auto-download document and then navigate
+            _autoDownloadDocument(data['documentId'], () {
+              AppRouter.router.push('/documents/${data['documentId']}');
+            });
+          } else {
+            // Navigate to document details screen
+            AppRouter.router.push('/documents/${data['documentId']}');
+          }
         } else if (data['type'] == 'software' && data['softwareId'] != null) {
-          // Navigate to software details screen
-          AppRouter.router.push('/software/${data['softwareId']}');
+          if (autoDownload) {
+            // Auto-download software and then navigate
+            _autoDownloadSoftware(data['softwareId'], () {
+              AppRouter.router.push('/software/${data['softwareId']}');
+            });
+          } else {
+            // Navigate to software details screen
+            AppRouter.router.push('/software/${data['softwareId']}');
+          }
         }
       } catch (e) {
         logger.e(_tag, 'Error parsing notification payload', e);
@@ -388,6 +419,144 @@ class NotificationService {
       }
     } catch (e) {
       logger.e(_tag, 'Error saving FCM token to Firestore', e);
+    }
+  }
+  
+  /// Auto-download document and execute callback on completion
+  Future<void> _autoDownloadDocument(String documentId, VoidCallback? onComplete) async {
+    try {
+      logger.i(_tag, 'Auto-downloading document: $documentId');
+      
+      // Create a temporary container to access the document notifier
+      // Note: In a real app, you might want to inject these dependencies
+      final documentNotifier = DocumentNotifier();
+      
+      // Show a local notification about download starting
+      await _showDownloadNotification(
+        'Document Download',
+        'Starting download...',
+        'document_download_$documentId',
+      );
+      
+      // Start the download
+      await documentNotifier.downloadDocument(documentId);
+      
+      // Show completion notification
+      await _showDownloadNotification(
+        'Download Complete',
+        'Document downloaded successfully',
+        'document_complete_$documentId',
+        isComplete: true,
+      );
+      
+      logger.i(_tag, 'Document auto-download completed: $documentId');
+      
+      // Execute callback after a short delay to allow notification to show
+      if (onComplete != null) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        onComplete();
+      }
+    } catch (e) {
+      logger.e(_tag, 'Error auto-downloading document', e);
+      
+      // Show error notification
+      await _showDownloadNotification(
+        'Download Failed',
+        'Failed to download document',
+        'document_error_$documentId',
+        isError: true,
+      );
+    }
+  }
+  
+  /// Auto-download software and execute callback on completion
+  Future<void> _autoDownloadSoftware(String softwareId, VoidCallback? onComplete) async {
+    try {
+      logger.i(_tag, 'Auto-downloading software: $softwareId');
+      
+      // Create a temporary container to access the software notifier
+      final softwareNotifier = SoftwareNotifier();
+      
+      // Show a local notification about download starting
+      await _showDownloadNotification(
+        'Software Download',
+        'Starting download...',
+        'software_download_$softwareId',
+      );
+      
+      // Start the download
+      await softwareNotifier.downloadSoftware(softwareId);
+      
+      // Show completion notification
+      await _showDownloadNotification(
+        'Download Complete',
+        'Software downloaded successfully',
+        'software_complete_$softwareId',
+        isComplete: true,
+      );
+      
+      logger.i(_tag, 'Software auto-download completed: $softwareId');
+      
+      // Execute callback after a short delay to allow notification to show
+      if (onComplete != null) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        onComplete();
+      }
+    } catch (e) {
+      logger.e(_tag, 'Error auto-downloading software', e);
+      
+      // Show error notification
+      await _showDownloadNotification(
+        'Download Failed',
+        'Failed to download software',
+        'software_error_$softwareId',
+        isError: true,
+      );
+    }
+  }
+  
+  /// Show a download progress/status notification
+  Future<void> _showDownloadNotification(
+    String title,
+    String body,
+    String tag, {
+    bool isComplete = false,
+    bool isError = false,
+  }) async {
+    Color color;
+    String icon;
+    
+    if (isComplete) {
+      color = const Color(0xFF4CAF50); // Green
+      icon = '@drawable/ic_check';
+    } else if (isError) {
+      color = const Color(0xFFF44336); // Red
+      icon = '@drawable/ic_error';
+    } else {
+      color = const Color(0xFF2196F3); // Blue
+      icon = '@drawable/ic_download';
+    }
+    
+    try {
+      await _localNotifications.show(
+        tag.hashCode,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'downloads_channel',
+            'Downloads',
+            importance: Importance.low,
+            icon: icon,
+            color: color,
+            autoCancel: isComplete || isError,
+            ongoing: !isComplete && !isError,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      logger.e(_tag, 'Error showing download notification', e);
     }
   }
 }
