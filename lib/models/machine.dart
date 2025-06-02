@@ -8,6 +8,7 @@ class Machine {
   final String? description;
   final String? documentPath;
   final String machineId;
+  final bool displayInApp;
 
   Machine({
     required this.manufacturer,
@@ -16,6 +17,7 @@ class Machine {
     this.description,
     this.documentPath,
     String? machineId,
+    this.displayInApp = true, // Default to true for backward compatibility
   }) : machineId = machineId ?? '${manufacturer.toLowerCase()}_${model.toLowerCase().replaceAll(' ', '')}';
 
   // Getter to provide a combined name for display purposes
@@ -32,6 +34,7 @@ class Machine {
       'imagePath': imagePath,
       'description': description,
       'documentPath': documentPath,
+      'displayInApp': displayInApp,
     };
   }
   
@@ -68,6 +71,7 @@ class Machine {
       imagePath: imageUrl, // Can be null if no image is assigned
       description: data['description'],
       documentPath: data['documentPath'],
+      displayInApp: data['displayInApp'] ?? true, // Default to true if not specified
       machineId: docId,
     );
   }

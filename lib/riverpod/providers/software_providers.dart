@@ -57,17 +57,17 @@ bool isSoftwareDownloading(Ref ref, String softwareId) {
 
 /// Provider to get a specific software by ID
 @riverpod
-Software? softwareById(Ref ref, String softwareId) {
-  // Watching the whole list provider might cause unnecessary rebuilds
-  // if only one software changes but it's not the one we are looking for.
-  // Consider watching the notifier directly if performance becomes an issue.
-  final softwareList = ref.watch(softwareNotifierProvider).softwareList;
-  try {
-    return softwareList.firstWhere((s) => s.id == softwareId);
-  } catch (e) {
-    // Consider logging the error or handling it differently
-    return null;
+Future<Software?> softwareById(Ref ref, String softwareId) async {
+  final notifier = ref.watch(softwareNotifierProvider.notifier);
+  
+  // First try to get from local cache
+  final cached = notifier.getSoftwareById(softwareId);
+  if (cached != null) {
+    return cached;
   }
+  
+  // If not in cache, fetch from Firestore
+  return await notifier.fetchSoftwareById(softwareId);
 }
 
 /// Provider for software error state

@@ -435,7 +435,7 @@ class _IsSoftwareDownloadingProviderElement
   String get softwareId => (origin as IsSoftwareDownloadingProvider).softwareId;
 }
 
-String _$softwareByIdHash() => r'ce70ceac03cec3a9bba7be9b73186830e1ab7a44';
+String _$softwareByIdHash() => r'965322df4237870732c3c97b0e934a08490db718';
 
 /// Provider to get a specific software by ID
 ///
@@ -446,7 +446,7 @@ const softwareByIdProvider = SoftwareByIdFamily();
 /// Provider to get a specific software by ID
 ///
 /// Copied from [softwareById].
-class SoftwareByIdFamily extends Family<Software?> {
+class SoftwareByIdFamily extends Family<AsyncValue<Software?>> {
   /// Provider to get a specific software by ID
   ///
   /// Copied from [softwareById].
@@ -490,7 +490,7 @@ class SoftwareByIdFamily extends Family<Software?> {
 /// Provider to get a specific software by ID
 ///
 /// Copied from [softwareById].
-class SoftwareByIdProvider extends AutoDisposeProvider<Software?> {
+class SoftwareByIdProvider extends AutoDisposeFutureProvider<Software?> {
   /// Provider to get a specific software by ID
   ///
   /// Copied from [softwareById].
@@ -527,7 +527,7 @@ class SoftwareByIdProvider extends AutoDisposeProvider<Software?> {
 
   @override
   Override overrideWith(
-    Software? Function(SoftwareByIdRef provider) create,
+    FutureOr<Software?> Function(SoftwareByIdRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -544,7 +544,7 @@ class SoftwareByIdProvider extends AutoDisposeProvider<Software?> {
   }
 
   @override
-  AutoDisposeProviderElement<Software?> createElement() {
+  AutoDisposeFutureProviderElement<Software?> createElement() {
     return _SoftwareByIdProviderElement(this);
   }
 
@@ -564,13 +564,13 @@ class SoftwareByIdProvider extends AutoDisposeProvider<Software?> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin SoftwareByIdRef on AutoDisposeProviderRef<Software?> {
+mixin SoftwareByIdRef on AutoDisposeFutureProviderRef<Software?> {
   /// The parameter `softwareId` of this provider.
   String get softwareId;
 }
 
-class _SoftwareByIdProviderElement extends AutoDisposeProviderElement<Software?>
-    with SoftwareByIdRef {
+class _SoftwareByIdProviderElement
+    extends AutoDisposeFutureProviderElement<Software?> with SoftwareByIdRef {
   _SoftwareByIdProviderElement(super.provider);
 
   @override

@@ -33,22 +33,24 @@ class SoftwareState {
     List<Software>? filteredSoftwareList,
     bool? isLoading,
     String? searchQuery,
-    String? selectedMachineId,
-    String? selectedCategory,
+    Object? selectedMachineId = _undefined,
+    Object? selectedCategory = _undefined,
     Map<String, double>? downloadProgress,
-    String? error,
+    Object? error = _undefined,
   }) {
     return SoftwareState(
       softwareList: softwareList ?? this.softwareList,
       filteredSoftwareList: filteredSoftwareList ?? this.filteredSoftwareList,
       isLoading: isLoading ?? this.isLoading,
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedMachineId: selectedMachineId ?? this.selectedMachineId,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedMachineId: selectedMachineId == _undefined ? this.selectedMachineId : selectedMachineId as String?,
+      selectedCategory: selectedCategory == _undefined ? this.selectedCategory : selectedCategory as String?,
       downloadProgress: downloadProgress ?? this.downloadProgress,
-      error: error,
+      error: error == _undefined ? this.error : error as String?,
     );
   }
+
+  static const Object _undefined = Object();
 
   // Get download progress for a specific software
   double getDownloadProgress(String softwareId) {

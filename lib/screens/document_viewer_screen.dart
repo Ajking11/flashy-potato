@@ -11,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../models/document.dart';
 import '../constants.dart';
 import '../riverpod/providers/document_providers.dart';
+import '../riverpod/notifiers/document_notifier.dart';
 
 class DocumentViewerScreen extends ConsumerStatefulWidget {
   final TechnicalDocument? document;
@@ -50,31 +51,53 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     // Initialize document from props or provider
     if (widget.document != null) {
       _document = widget.document!;
+      _proceedWithDocumentLoading();
     } else if (widget.documentId != null) {
       // Get document from provider
       final doc = ref.read(documentByIdProvider(widget.documentId!));
       if (doc != null) {
         _document = doc;
+        _proceedWithDocumentLoading();
+      } else {
+        // Document not in local cache, fetch from Firebase
+        _fetchDocumentFromFirebase();
+      }
+    }
+  }
+  
+  Future<void> _fetchDocumentFromFirebase() async {
+    if (widget.documentId == null) return;
+    
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+    
+    try {
+      // Use the document notifier to fetch the document
+      final documentNotifier = ref.read(documentNotifierProvider.notifier);
+      final doc = await documentNotifier.fetchDocumentById(widget.documentId!);
+      
+      if (doc != null) {
+        _document = doc;
+        _proceedWithDocumentLoading();
       } else {
         setState(() {
           _hasError = true;
           _errorMessage = 'Document not found';
           _isLoading = false;
         });
-        return;
       }
-    }
-    
-    // Check if document is downloaded
-    if (!_document.isDownloaded && widget.filePath == null) {
+    } catch (e) {
       setState(() {
         _hasError = true;
-        _errorMessage = 'Document is not downloaded. Please download it first.';
+        _errorMessage = 'Failed to fetch document: $e';
         _isLoading = false;
       });
-      return;
     }
-    
+  }
+  
+  void _proceedWithDocumentLoading() {
     // If no external filePath was provided, load the document.
     if (widget.filePath == null) {
       _loadDocument();
@@ -123,7 +146,30 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         return;
       }
       
-      // If not locally available, try to download from Firebase Storage
+      // If not locally available, automatically download using the document notifier
+      if (!_document.isDownloaded) {
+        try {
+          debugPrint('Document not downloaded, auto-downloading: ${_document.id}');
+          final documentNotifier = ref.read(documentNotifierProvider.notifier);
+          await documentNotifier.downloadDocument(_document.id);
+          
+          // After download, try to load again
+          if (await localFile.exists()) {
+            _initializePdfControllerWithPath(localPath);
+            
+            setState(() {
+              _pdfPath = localPath;
+              _isLoading = false;
+            });
+            return;
+          }
+        } catch (downloadError) {
+          debugPrint('Error auto-downloading document: $downloadError');
+          // Continue to fallback methods
+        }
+      }
+      
+      // If not locally available, try to download from Firebase Storage directly
       try {
         final storageRef = FirebaseStorage.instance
             .ref()

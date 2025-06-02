@@ -30,12 +30,37 @@ class SoftwareDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Load software by ID if software is null
     if (software == null && softwareId != null) {
-      // Watch the software provider to get the software with the given ID
-      final softwareData = ref.watch(software_providers.softwareByIdProvider(softwareId!));
+      // Watch the async software provider to get the software with the given ID
+      final softwareAsync = ref.watch(software_providers.softwareByIdProvider(softwareId!));
       
-      if (softwareData == null) {
-        // Display loading indicator while fetching data
-        return Scaffold(
+      return softwareAsync.when(
+        data: (softwareData) {
+          if (softwareData == null) {
+            // Software not found
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Not Found'),
+                backgroundColor: costaRed,
+              ),
+              body: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('Software not found', style: TextStyle(fontSize: 18)),
+                    SizedBox(height: 8),
+                    Text('The requested software could not be loaded.'),
+                  ],
+                ),
+              ),
+            );
+          }
+          
+          // Software found, build the UI
+          return _buildScreenWithSoftware(context, ref, softwareData);
+        },
+        loading: () => Scaffold(
           appBar: AppBar(
             title: const Text('Loading...'),
             backgroundColor: costaRed,
@@ -50,11 +75,31 @@ class SoftwareDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
-        );
-      }
-      
-      // Software found, build the UI
-      return _buildScreenWithSoftware(context, ref, softwareData);
+        ),
+        error: (error, stack) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Error'),
+            backgroundColor: costaRed,
+          ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text('Error loading software', style: TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                Text('$error'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(software_providers.softwareByIdProvider(softwareId!)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     
     // Use provided software if available

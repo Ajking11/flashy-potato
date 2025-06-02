@@ -114,9 +114,6 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
         // Search and filter bar
         _buildSearchBar(),
         
-        // Filter chips
-        _buildFilterChips(),
-        
         // Software list
         Expanded(
           child: _buildSoftwareList(),
@@ -126,237 +123,341 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: latte,
-      child: Container(
-        decoration: cardDecoration,
-        child: TextField(
-          controller: _searchController,
-          focusNode: _searchFocusNode,
-          decoration: InputDecoration(
-            hintText: 'Search software...',
-            prefixIcon: const Icon(Icons.search, color: costaRed),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey),
-                    onPressed: () {
-                      _searchController.clear();
-                      ref.read(softwareNotifierProvider.notifier)
-                          .setSearchQuery('');
-                      _searchFocusNode.unfocus();
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 12,
-              horizontal: 16,
-            ),
-          ),
-          onChanged: (value) {
-            ref.read(softwareNotifierProvider.notifier)
-                .setSearchQuery(value);
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
     final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
     final selectedCategory = ref.watch(softwareSelectedCategoryProvider);
     final hasFilters = selectedMachineId != null || selectedCategory != null;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       color: latte,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Filter buttons row - connected with square inner edges
-          Row(
-            children: [
-              // Connected filter buttons taking full width
-              Expanded(
-                child: Row(
-                  children: [
-                    // Machine filter dropdown - only show if not pre-filtered
-                    if (widget.initialMachineId == null)
-                      Expanded(
-                        flex: 1,
-                        child: _buildFilterDropdown(
-                          label: 'Machines',  // Shortened label
-                          value: selectedMachineId == null 
-                            ? 'All' 
-                            : _getShortMachineName(selectedMachineId),
-                          icon: Icons.devices,
-                          onTap: () => _showMachineFilterSheet(context),
-                          isActive: selectedMachineId != null,
-                          isLeftButton: true,
-                        ),
-                      ),
-                    
-                    // Category filter dropdown
-                    Expanded(
-                      flex: 1,
-                      child: _buildFilterDropdown(
-                        label: 'Categories',  // Shortened label
-                        value: selectedCategory ?? 'All',
-                        icon: Icons.category,
-                        onTap: () => _showCategoryFilterSheet(context),
-                        isActive: selectedCategory != null,
-                        isRightButton: true,
-                      ),
-                    ),
-                  ],
+          // Search field
+          Expanded(
+            child: Container(
+              decoration: cardDecoration,
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search software...',
+                  prefixIcon: const Icon(Icons.search, color: costaRed),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.grey),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref.read(softwareNotifierProvider.notifier)
+                                .setSearchQuery('');
+                            _searchFocusNode.unfocus();
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                 ),
+                onChanged: (value) {
+                  ref.read(softwareNotifierProvider.notifier)
+                      .setSearchQuery(value);
+                },
               ),
-            ],
+            ),
           ),
           
-          // Active filters display
-          if (hasFilters) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (selectedMachineId != null)
-                  _buildActiveFilterChip(
-                    _getMachineName(selectedMachineId),
-                    Icons.devices,
-                    () => ref.read(softwareNotifierProvider.notifier).filterByMachine(null),
-                  ),
-                if (selectedCategory != null)
-                  _buildActiveFilterChip(
-                    selectedCategory,
-                    _getCategoryIcon(selectedCategory),
-                    () => ref.read(softwareNotifierProvider.notifier).filterByCategory(null),
-                  ),
+          const SizedBox(width: 12),
+          
+          // Filter button
+          Container(
+            decoration: BoxDecoration(
+              color: hasFilters ? costaRed : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: hasFilters ? costaRed : Colors.grey.shade300,
+                width: hasFilters ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
               ],
             ),
-          ],
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showFilterBottomSheet(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  child: Stack(
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        color: hasFilters ? Colors.white : costaRed,
+                        size: 24,
+                      ),
+                      if (hasFilters)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${(selectedMachineId != null ? 1 : 0) + (selectedCategory != null ? 1 : 0)}',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  color: costaRed,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Helper method to build a styled filter dropdown button with label and value
-  Widget _buildFilterDropdown({
-    required String label,
-    required String value,
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool isActive,
-    bool isLeftButton = false,
-    bool isRightButton = false,
-  }) {
-    // Create a BorderRadius that is square on one side
-    BorderRadius borderRadius;
-    if (isLeftButton) {
-      // Left button - rounded on left, square on right
-      borderRadius = const BorderRadius.horizontal(
-        left: Radius.circular(25),
-        right: Radius.zero,
-      );
-    } else if (isRightButton) {
-      // Right button - square on left, rounded on right
-      borderRadius = const BorderRadius.horizontal(
-        left: Radius.zero,
-        right: Radius.circular(25),
-      );
-    } else {
-      // Default - fully rounded
-      borderRadius = BorderRadius.circular(25);
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive ? costaRed.withValues(alpha: 0.1) : Colors.white,
-            borderRadius: borderRadius,
-            border: Border.all(
-              color: isActive ? costaRed : Colors.grey.shade300,
-              width: isActive ? 1.5 : 1,
+  // Comprehensive filter bottom sheet
+  void _showFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
+          final selectedCategory = ref.watch(softwareSelectedCategoryProvider);
+          final filteredSoftwareList = ref.watch(filteredSoftwareListProvider);
+          final allSoftwareList = ref.watch(softwareListProvider);
+          final hasFilters = selectedMachineId != null || selectedCategory != null;
+          
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isActive ? costaRed : Colors.grey.shade700,
-              ),
-              const SizedBox(width: 4),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: SafeArea(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Label at top (smaller)
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 10,
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  // Value below (more prominent)
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: isActive ? costaRed : Colors.grey.shade800,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 13,
+                  
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.tune, color: costaRed, size: 24),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Filters',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: deepRed,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (hasFilters)
+                          TextButton.icon(
+                            onPressed: () {
+                              ref.read(softwareNotifierProvider.notifier).clearFilters();
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.clear_all, size: 18),
+                            label: const Text('Clear All'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: costaRed,
+                            ),
+                          ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  
+                  // Result count
+                  if (hasFilters)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${filteredSoftwareList.length} of ${allSoftwareList.length} software items match your filters',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  
+                  // Filter options
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Machine filter section
+                          if (widget.initialMachineId == null) ...[
+                            const SizedBox(height: 8),
+                            _buildFilterSection(
+                              title: 'Machine',
+                              icon: Icons.devices,
+                              currentValue: selectedMachineId != null 
+                                ? _getShortMachineName(selectedMachineId) 
+                                : null,
+                              onTap: () => _showMachineFilterSheet(context),
+                              onClear: selectedMachineId != null 
+                                ? () => ref.read(softwareNotifierProvider.notifier).filterByMachine(null)
+                                : null,
+                            ),
+                          ],
+                          
+                          // Category filter section
+                          const SizedBox(height: 16),
+                          _buildFilterSection(
+                            title: 'Category',
+                            icon: Icons.category,
+                            currentValue: selectedCategory,
+                            onTap: () => _showCategoryFilterSheet(context),
+                            onClear: selectedCategory != null 
+                              ? () => ref.read(softwareNotifierProvider.notifier).filterByCategory(null)
+                              : null,
+                          ),
+                          
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const Spacer(),
-              Icon(
-                Icons.arrow_drop_down,
-                color: isActive ? costaRed : Colors.grey.shade700,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
-
-  // Helper method to build an active filter chip
-  Widget _buildActiveFilterChip(String label, IconData icon, VoidCallback onRemove) {
-    return Chip(
-      label: Text(
-        label,
-        style: const TextStyle(
-          color: costaRed,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
+  
+  // Helper method to build filter sections in bottom sheet
+  Widget _buildFilterSection({
+    required String title,
+    required IconData icon,
+    String? currentValue,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+  }) {
+    final isActive = currentValue != null;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade800,
+          ),
         ),
-      ),
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: costaRed,
-      ),
-      deleteIcon: const Icon(
-        Icons.close,
-        size: 16,
-        color: costaRed,
-      ),
-      onDeleted: onRemove,
-      backgroundColor: costaRed.withValues(alpha: 0.1),
-      side: const BorderSide(color: costaRed),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+        const SizedBox(height: 8),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isActive 
+                  ? costaRed.withValues(alpha: 0.05) 
+                  : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive 
+                    ? costaRed.withValues(alpha: 0.3) 
+                    : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: isActive ? costaRed : Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      currentValue ?? 'All',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                        color: isActive ? costaRed : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  if (onClear != null) ...[
+                    IconButton(
+                      onPressed: onClear,
+                      icon: const Icon(Icons.close, color: costaRed),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.keyboard_arrow_right,
+                      color: Colors.grey.shade400,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1021,20 +1122,6 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
     }
   }
   
-  // Helper method to get machine name from ID
-  String _getMachineName(String machineId) {
-    final machines = getMachines();
-    final machine = machines.firstWhere(
-      (m) => m.machineId == machineId,
-      orElse: () => Machine(
-        manufacturer: 'Unknown',
-        model: machineId,
-        imagePath: '',
-      ),
-    );
-    
-    return '${machine.manufacturer} ${machine.model}';
-  }
 
   // Get a shorter version of machine name
   String _getShortMachineName(String machineId) {
