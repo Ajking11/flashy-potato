@@ -5,6 +5,7 @@ import '../models/software.dart';
 import '../models/machine.dart';
 import '../riverpod/notifiers/software_notifier.dart';
 import '../riverpod/providers/software_providers.dart';
+import '../riverpod/providers/machine_providers.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
 
@@ -463,8 +464,6 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
 
   // Show bottom sheet for machine filter selection
   void _showMachineFilterSheet(BuildContext context) {
-    final machines = getMachines();
-    final selectedMachineId = ref.read(softwareSelectedMachineIdProvider);
     
     showModalBottomSheet(
       context: context,
@@ -514,19 +513,26 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (selectedMachineId != null)
-                        TextButton.icon(
-                          onPressed: () {
-                            ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.restart_alt, size: 16),
-                          label: const Text('Reset'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: costaRed,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                        ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
+                          if (selectedMachineId != null) {
+                            return TextButton.icon(
+                              onPressed: () {
+                                ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(Icons.restart_alt, size: 16),
+                              label: const Text('Reset'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: costaRed,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
@@ -536,44 +542,62 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
                 ),
                 
                 // All machines option
-                ListTile(
-                  leading: const Icon(
-                    Icons.device_hub,
-                    color: costaRed,
-                  ),
-                  title: const Text('All Machines'),
-                  selected: selectedMachineId == null,
-                  selectedTileColor: costaRed.withValues(alpha: 0.1),
-                  selectedColor: costaRed,
-                  onTap: () {
-                    ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
-                    Navigator.pop(context);
-                  },
+                Consumer(
+                  builder: (context, ref, _) {
+                    final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.device_hub,
+                        color: costaRed,
+                      ),
+                      title: const Text('All Machines'),
+                      selected: selectedMachineId == null,
+                      selectedTileColor: costaRed.withValues(alpha: 0.1),
+                      selectedColor: costaRed,
+                      onTap: () {
+                        ref.read(softwareNotifierProvider.notifier).filterByMachine(null);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }
                 ),
                 
                 // Machine list
                 Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: machines.length,
-                    itemBuilder: (context, index) {
-                      final machine = machines[index];
-                      final isSelected = selectedMachineId == machine.machineId;
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final machines = ref.watch(displayableMachinesProvider);
+                      final selectedMachineId = ref.watch(softwareSelectedMachineIdProvider);
                       
-                      return ListTile(
-                        leading: isSelected
-                          ? const Icon(Icons.check_circle, color: costaRed)
-                          : const Icon(Icons.coffee, color: Colors.brown),
-                        title: Text('${machine.manufacturer} ${machine.model}'),
-                        selected: isSelected,
-                        selectedTileColor: costaRed.withValues(alpha: 0.1),
-                        selectedColor: costaRed,
-                        onTap: () {
-                          ref.read(softwareNotifierProvider.notifier).filterByMachine(machine.machineId);
-                          Navigator.pop(context);
+                      // Debug logging
+                      debugPrint('Software machine filter sheet - machines count: ${machines.length}');
+                      for (var machine in machines) {
+                        debugPrint('Machine: ${machine.manufacturer} ${machine.model} - displayInApp: ${machine.displayInApp}');
+                      }
+                      
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: machines.length,
+                        itemBuilder: (context, index) {
+                          final machine = machines[index];
+                          final isSelected = selectedMachineId == machine.machineId;
+                          
+                          return ListTile(
+                            leading: isSelected
+                              ? const Icon(Icons.check_circle, color: costaRed)
+                              : const Icon(Icons.coffee, color: Colors.brown),
+                            title: Text('${machine.manufacturer} ${machine.model}'),
+                            selected: isSelected,
+                            selectedTileColor: costaRed.withValues(alpha: 0.1),
+                            selectedColor: costaRed,
+                            onTap: () {
+                              ref.read(softwareNotifierProvider.notifier).filterByMachine(machine.machineId);
+                              Navigator.pop(context);
+                            },
+                          );
                         },
                       );
-                    },
+                    }
                   ),
                 ),
               ],
@@ -1125,7 +1149,7 @@ class _SoftwareRepositoryScreenState extends ConsumerState<SoftwareRepositoryScr
 
   // Get a shorter version of machine name
   String _getShortMachineName(String machineId) {
-    final machines = getMachines();
+    final machines = ref.read(displayableMachinesProvider);
     final machine = machines.firstWhere(
       (m) => m.machineId == machineId,
       orElse: () => Machine(

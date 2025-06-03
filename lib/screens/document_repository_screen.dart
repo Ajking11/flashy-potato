@@ -5,6 +5,7 @@ import '../models/document.dart';
 import '../models/machine.dart';
 import '../riverpod/notifiers/document_notifier.dart';
 import '../riverpod/providers/document_providers.dart';
+import '../riverpod/providers/machine_providers.dart';
 import '../constants.dart';
 import '../widgets/fade_animation.dart';
 
@@ -465,8 +466,6 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
 
   // Show bottom sheet for machine filter selection
   void _showMachineFilterSheet(BuildContext context) {
-    final machines = getMachines();
-    final selectedMachineId = ref.read(selectedMachineIdProvider);
     
     showModalBottomSheet(
       context: context,
@@ -516,19 +515,26 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
                       ),
                       const Spacer(),
                       // Reset button if a filter is selected
-                      if (selectedMachineId != null)
-                        TextButton.icon(
-                          onPressed: () {
-                            ref.read(documentNotifierProvider.notifier).filterByMachine(null);
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.restart_alt, size: 16),
-                          label: const Text('Reset'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: costaRed,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                        ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final selectedMachineId = ref.watch(selectedMachineIdProvider);
+                          if (selectedMachineId != null) {
+                            return TextButton.icon(
+                              onPressed: () {
+                                ref.read(documentNotifierProvider.notifier).filterByMachine(null);
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(Icons.restart_alt, size: 16),
+                              label: const Text('Reset'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: costaRed,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
@@ -562,7 +568,15 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
                 Flexible(
                   child: Consumer(
                     builder: (context, ref, _) {
+                      final machines = ref.watch(displayableMachinesProvider);
                       final currentSelectedMachineId = ref.watch(selectedMachineIdProvider);
+                      
+                      // Debug logging
+                      debugPrint('Machine filter sheet - machines count: ${machines.length}');
+                      for (var machine in machines) {
+                        debugPrint('Machine: ${machine.manufacturer} ${machine.model} - displayInApp: ${machine.displayInApp}');
+                      }
+                      
                       return ListView.builder(
                         shrinkWrap: true,
                         itemCount: machines.length,
@@ -1062,7 +1076,7 @@ class _DocumentRepositoryScreenState extends ConsumerState<DocumentRepositoryScr
 
   // Get a shorter version of machine name
   String _getShortMachineName(String machineId) {
-    final machines = getMachines();
+    final machines = ref.read(displayableMachinesProvider);
     final machine = machines.firstWhere(
       (m) => m.machineId == machineId,
       orElse: () => Machine(

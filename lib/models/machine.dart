@@ -94,19 +94,18 @@ Future<List<Machine>> getMachinesFromFirestore() async {
 // Legacy method - get machines from local data
 List<Machine> getLocalMachines() {
   return [
-    Machine(manufacturer: 'Schaerer', model: 'SCA', imagePath: 'assets/images/MK2.png'),
-    Machine(manufacturer: 'Schaerer', model: 'SCB', imagePath: 'assets/images/MK3.png'),
-    Machine(manufacturer: 'Schaerer', model: 'SCBBF', imagePath: 'assets/images/MK4.png'),
-    Machine(manufacturer: 'Schaerer', model: 'SOUL S10', imagePath: 'assets/images/SOULS10.png'),
-    Machine(manufacturer: 'Thermoplan', model: 'MARLOW', imagePath: 'assets/images/MARLOW.png'),
-    Machine(manufacturer: 'Thermoplan', model: 'MARLOW 1.2', imagePath: 'assets/images/MARLOW12.png'),
-    // Example machine with no image to test the null image path handling
-    Machine(manufacturer: 'Test', model: 'No Image', imagePath: null),
+    Machine(manufacturer: 'Schaerer', model: 'SCA', imagePath: 'assets/images/MK2.png', displayInApp: true),
+    Machine(manufacturer: 'Schaerer', model: 'SCB', imagePath: 'assets/images/MK3.png', displayInApp: true),
+    Machine(manufacturer: 'Schaerer', model: 'SCBBF', imagePath: 'assets/images/MK4.png', displayInApp: true),
+    Machine(manufacturer: 'Schaerer', model: 'SOUL S10', imagePath: 'assets/images/SOULS10.png', displayInApp: true),
+    Machine(manufacturer: 'Thermoplan', model: 'MARLOW', imagePath: 'assets/images/MARLOW.png', displayInApp: true),
+    Machine(manufacturer: 'Thermoplan', model: 'MARLOW 1.2', imagePath: 'assets/images/MARLOW12.png', displayInApp: true),
   ];
 }
 
-// For backward compatibility
+// For backward compatibility - this will be replaced by provider-based access
 List<Machine> getMachines() {
   // Return local data synchronously for backward compatibility
+  // Note: This should be replaced with provider-based access for Firebase data
   return getLocalMachines();
 }
