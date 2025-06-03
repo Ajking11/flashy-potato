@@ -8,7 +8,7 @@ const Color italianPorcelain = Color.fromARGB(255, 255, 251, 245); // #FFFBF5
 const Color latte = Color.fromARGB(255, 242, 226, 218);  // #F2E2DA
 
 // App version (accessible throughout the app)
-const String appVersion = "0.2.5";
+const String appVersion = "0.5.270";
 
 // TYPOGRAPHY SYSTEM
 // Based on Costa Coffee Brand Guidelines

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// These imports will be uncommented when implementing real ZIP extraction and checksum verification
-// import 'package:archive/archive.dart';
-// import 'package:crypto/crypto.dart';
 import '../models/software.dart';
 import '../constants.dart';
 import '../models/machine.dart';
@@ -697,7 +694,7 @@ class UsbTransferWizard extends ConsumerWidget {
     final isTransferStarted = ref.watch(usb_transfer_providers.isTransferStartedProvider(software.id));
     final isTransferComplete = ref.watch(usb_transfer_providers.isTransferCompleteProvider(software.id));
     final transferProgress = ref.watch(usb_transfer_providers.transferProgressProvider(software.id));
-    // Note: no longer using individual transferStatus as we're using comprehensive statusInfo
+    final transferStatus = ref.watch(usb_transfer_providers.transferStatusProvider(software.id));
     
     // Get the notifier to modify state
     final notifier = ref.read(usbTransferNotifierProvider(software.id).notifier);
@@ -1210,51 +1207,7 @@ class UsbTransferWizard extends ConsumerWidget {
                 
                 // Transfer details or completion message
                 if (isTransferComplete)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Software successfully transferred to USB drive',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text('Package: ${software.name} v${software.version}'),
-                        const Text('Location: USB DRIVE (root directory)'),
-                        const SizedBox(height: 8),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              const TextSpan(
-                                text: 'Files: ',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: software.filePath.split('/').last,
-                                style: const TextStyle(fontFamily: 'monospace'),
-                              ),
-                              const TextSpan(text: ', README.txt')
-                            ],
-                          ),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'You can now safely disconnect the USB drive and use it to install the software on your machine.',
-                          style: TextStyle(fontStyle: FontStyle.italic),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildTransferCompletionWidget(software, transferStatus),
                 if (isTransferStarted && !isTransferComplete && !ref.watch(usb_transfer_providers.hasTransferErrorProvider(software.id)))
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -1479,5 +1432,89 @@ class UsbTransferWizard extends ConsumerWidget {
       default:
         return Icons.code;
     }
+  }
+
+  Widget _buildTransferCompletionWidget(Software software, String transferStatus) {
+    // Check if the software is a ZIP file
+    final fileName = software.filePath.split('/').last;
+    final isZipFile = fileName.toLowerCase().endsWith('.zip');
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Dynamic completion message from transfer status
+          Text(
+            transferStatus,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Package: ${software.name} v${software.version}'),
+          Text(
+            isZipFile 
+                ? 'Contents extracted to: USB root directory' 
+                : 'Location: USB root directory'
+          ),
+          const SizedBox(height: 8),
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(
+                  text: 'Output: ',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(
+                  text: isZipFile 
+                      ? 'Multiple files + COSTA_EXTRACTION_INFO.txt'
+                      : '$fileName, COSTA_EXTRACTION_INFO.txt',
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ],
+            ),
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isZipFile 
+                ? 'Software package has been extracted and is ready for installation. You can now safely disconnect the USB drive.'
+                : 'You can now safely disconnect the USB drive and use it to install the software on your machine.',
+            style: const TextStyle(fontStyle: FontStyle.italic),
+          ),
+          if (isZipFile) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Files have been extracted directly to the USB root for easy access.',
+                      style: TextStyle(fontSize: 12, color: Colors.blue),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

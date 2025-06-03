@@ -1,13 +1,15 @@
 // lib/riverpod/notifiers/usb_transfer_notifier.dart
 import 'dart:io';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 
 import '../states/usb_transfer_state.dart';
 import '../../models/software.dart';
@@ -338,11 +340,26 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         transferStatus: 'Preparing file for transfer...',
       );
 
-      // Step 3: If it's a ZIP file, verify it
+      // Step 3: Check if it's a ZIP file and validate structure
       final String fileExt = _getFileExtension(state.sourcePath!).toLowerCase();
-      if (fileExt == '.zip') {
-        // In a real implementation, we would validate the ZIP structure
-        await Future.delayed(const Duration(milliseconds: 300));
+      final bool isZipFile = fileExt == '.zip';
+      
+      if (isZipFile) {
+        state = state.copyWith(
+          transferProgress: 0.3,
+          transferStatus: 'Validating ZIP archive structure...',
+        );
+        
+        // Validate ZIP structure
+        try {
+          final archive = ZipDecoder().decodeBytes(fileBytes);
+          if (archive.isEmpty) {
+            throw Exception('ZIP file is empty or corrupted');
+          }
+          debugPrint('ZIP validation successful: ${archive.length} files found');
+        } catch (e) {
+          throw Exception('Invalid ZIP file: $e');
+        }
       }
 
       // Step 4: Verify file integrity if we have a hash
@@ -352,65 +369,83 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       );
 
       if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
-        // In a real app we would calculate and verify the hash here
-        await Future.delayed(const Duration(milliseconds: 300));
+        final calculatedHash = sha256.convert(fileBytes).toString();
+        if (calculatedHash != software.sha256FileHash) {
+          throw Exception('File integrity check failed - corrupted download');
+        }
+        debugPrint('File integrity verification successful');
       }
 
-      // Step 5: Get file name from software
-      final fileName = software.filePath.split('/').last;
-      
-      // Update progress before file saving
-      state = state.copyWith(
-        transferProgress: 0.5,
-        transferStatus: 'Preparing to save $fileName to selected location...',
-      );
-
+      // Step 5: Handle ZIP extraction or direct file transfer
       String? outputPath;
-
-      // Choose transfer approach based on Android version and saved path
-      if (isAndroid10Plus || !_canWriteDirectly(state.usbMountPath!)) {
-        // SAF approach for Android 10+ or inaccessible paths
-        
-        // Create a temporary file for the dialog
-        final tempDir = await getTemporaryDirectory();
-        final tempFile = File('${tempDir.path}/$fileName');
-        await tempFile.writeAsBytes(fileBytes);
-        
+      
+      if (isZipFile) {
+        // Extract ZIP contents to USB root
         state = state.copyWith(
-          transferProgress: 0.6,
-          transferStatus: 'Saving file using system dialog...',
+          transferProgress: 0.5,
+          transferStatus: 'Extracting software package to destination...',
         );
-
-        // Use the system dialog to save the file
-        final params = SaveFileDialogParams(
-          sourceFilePath: tempFile.path,
-          fileName: fileName,
+        
+        outputPath = await _extractZipToDestination(
+          fileBytes, 
+          state.usbMountPath!, 
+          isAndroid10Plus,
+          software.name,
         );
-
-        try {
-          // Show the save dialog
-          outputPath = await FlutterFileDialog.saveFile(params: params);
-          
-          // Clean up temp file
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
-        } catch (e) {
-          // If FlutterFileDialog fails, try direct file writing as fallback
-          if (!isAndroid10Plus) {
-            outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
-          } else {
-            rethrow; // If on Android 10+ and SAF failed, let the error handler deal with it
-          }
-        }
       } else {
-        // Direct file writing for older Android or obvious direct paths
-        state = state.copyWith(
-          transferProgress: 0.6,
-          transferStatus: 'Copying file to selected location...',
-        );
+        // Regular file transfer (non-ZIP files)
+        final fileName = software.filePath.split('/').last;
         
-        outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
+        state = state.copyWith(
+          transferProgress: 0.5,
+          transferStatus: 'Preparing to save $fileName to selected location...',
+        );
+
+        // Choose transfer approach based on Android version and saved path
+        if (isAndroid10Plus || !_canWriteDirectly(state.usbMountPath!)) {
+          // SAF approach for Android 10+ or inaccessible paths
+          
+          // Create a temporary file for the dialog
+          final tempDir = await getTemporaryDirectory();
+          final tempFile = File('${tempDir.path}/$fileName');
+          await tempFile.writeAsBytes(fileBytes);
+          
+          state = state.copyWith(
+            transferProgress: 0.6,
+            transferStatus: 'Saving file using system dialog...',
+          );
+
+          // Use the system dialog to save the file
+          final params = SaveFileDialogParams(
+            sourceFilePath: tempFile.path,
+            fileName: fileName,
+          );
+
+          try {
+            // Show the save dialog
+            outputPath = await FlutterFileDialog.saveFile(params: params);
+            
+            // Clean up temp file
+            if (await tempFile.exists()) {
+              await tempFile.delete();
+            }
+          } catch (e) {
+            // If FlutterFileDialog fails, try direct file writing as fallback
+            if (!isAndroid10Plus) {
+              outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
+            } else {
+              rethrow; // If on Android 10+ and SAF failed, let the error handler deal with it
+            }
+          }
+        } else {
+          // Direct file writing for older Android or obvious direct paths
+          state = state.copyWith(
+            transferProgress: 0.6,
+            transferStatus: 'Copying file to selected location...',
+          );
+          
+          outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
+        }
       }
 
       // Handle user cancellation or failed writes
@@ -425,21 +460,25 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         return;
       }
 
-      // Step 6: Create README file (in real implementation)
+      // Step 6: Finalize transfer
       state = state.copyWith(
-        transferProgress: 0.9,
+        transferProgress: 0.95,
         transferStatus: 'Finalizing transfer...',
         outputPath: outputPath,
       );
 
-      // Simulate adding a README file
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Small delay for final operations
+      await Future.delayed(const Duration(milliseconds: 200));
 
-      // Complete the transfer
+      // Complete the transfer with appropriate message
+      final completionMessage = isZipFile 
+          ? 'Software package extracted successfully!' 
+          : 'File transfer complete!';
+      
       state = state.copyWith(
         transferProgress: 1.0,
         transferComplete: true,
-        transferStatus: 'Transfer complete!',
+        transferStatus: completionMessage,
       );
     } catch (e, stack) {
       // Log the error and stack trace
@@ -455,6 +494,126 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         error: 'Transfer failed: ${e.toString()}',
       );
     }
+  }
+  
+  // Extract ZIP contents to destination directory
+  Future<String?> _extractZipToDestination(
+    Uint8List zipBytes, 
+    String destinationPath, 
+    bool isAndroid10Plus,
+    String softwareName,
+  ) async {
+    try {
+      // Decode the ZIP archive
+      final archive = ZipDecoder().decodeBytes(zipBytes);
+      
+      state = state.copyWith(
+        transferProgress: 0.6,
+        transferStatus: 'Extracting ${archive.length} files to destination...',
+      );
+      
+      int extractedFiles = 0;
+      final totalFiles = archive.length;
+      
+      // Extract each file in the archive
+      for (final file in archive) {
+        // Update progress for each file
+        final progress = 0.6 + (0.3 * (extractedFiles / totalFiles));
+        state = state.copyWith(
+          transferProgress: progress,
+          transferStatus: 'Extracting: ${file.name} (${extractedFiles + 1}/$totalFiles)',
+        );
+        
+        if (file.isFile) {
+          // Create the full output path
+          final outputPath = '$destinationPath/${file.name}';
+          final outputFile = File(outputPath);
+          
+          // Create parent directories if they don't exist
+          final parentDir = outputFile.parent;
+          if (!await parentDir.exists()) {
+            await parentDir.create(recursive: true);
+          }
+          
+          // Write the file content
+          await outputFile.writeAsBytes(file.content as List<int>);
+          debugPrint('Extracted: ${file.name} (${file.size} bytes)');
+        } else if (file.isDirectory) {
+          // Create directory
+          final dirPath = '$destinationPath/${file.name}';
+          final directory = Directory(dirPath);
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          debugPrint('Created directory: ${file.name}');
+        }
+        
+        extractedFiles++;
+        
+        // Small delay to prevent UI blocking
+        if (extractedFiles % 5 == 0) {
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+      }
+      
+      state = state.copyWith(
+        transferProgress: 0.9,
+        transferStatus: 'Extraction complete! Finalizing transfer...',
+      );
+      
+      // Create a README file with extraction info
+      await _createExtractionReadme(destinationPath, softwareName, totalFiles);
+      
+      // Return the destination path as success indicator
+      return destinationPath;
+      
+    } catch (e, stack) {
+      debugPrintError(e, stack);
+      state = state.copyWith(
+        transferStatus: 'Error extracting ZIP file: ${e.toString()}',
+        error: 'ZIP extraction failed: $e',
+      );
+      return null;
+    }
+  }
+  
+  // Create a README file with extraction information
+  Future<void> _createExtractionReadme(String destinationPath, String softwareName, int fileCount) async {
+    try {
+      final readmePath = '$destinationPath/COSTA_EXTRACTION_INFO.txt';
+      final readmeFile = File(readmePath);
+      
+      final now = DateTime.now();
+      final formattedDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      
+      final readmeContent = '''
+Costa Coffee FSE Toolbox - Software Extraction Information
+========================================================
+
+Software Name: $softwareName
+Extraction Date: $formattedDate
+Total Files Extracted: $fileCount
+
+This directory contains the extracted contents of the software package.
+All files have been placed directly in the root of your selected storage location.
+
+For installation instructions, please refer to the documentation provided
+with this software package or contact Costa Coffee technical support.
+
+Generated by Costa FSE Toolbox v${_getAppVersion()}
+''';
+
+      await readmeFile.writeAsString(readmeContent);
+      debugPrint('Created extraction README at: $readmePath');
+    } catch (e) {
+      debugPrint('Warning: Could not create README file: $e');
+      // Don't fail the transfer if README creation fails
+    }
+  }
+  
+  // Get app version (simplified for now)
+  String _getAppVersion() {
+    return '0.5.272'; // This would normally come from package info
   }
   
   // Helper method to write file directly (for older Android versions)
