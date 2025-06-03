@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../models/document.dart';
 import '../../services/firebase_document_service.dart';
+import '../../services/offline_storage_service.dart';
+import '../../services/connectivity_service.dart';
 import '../states/document_state.dart';
 
 part 'document_notifier.g.dart';
@@ -14,6 +16,8 @@ part 'document_notifier.g.dart';
 @riverpod
 class DocumentNotifier extends _$DocumentNotifier {
   FirebaseDocumentService? _documentService;
+  final _offlineStorage = OfflineStorageService();
+  final _connectivityService = ConnectivityService.instance;
   
   @override
   DocumentState build() {
@@ -33,18 +37,39 @@ class DocumentNotifier extends _$DocumentNotifier {
   // Safely initialize the service and load data
   Future<void> _initializeAndLoad() async {
     try {
-      // Make sure service is initialized only once
-      _documentService ??= FirebaseDocumentService();
+      // Try to initialize Firebase service with timeout
+      try {
+        _documentService ??= FirebaseDocumentService();
+        debugPrint('Document service initialized');
+      } catch (e) {
+        debugPrint('Firebase document service failed to initialize: $e');
+        // Continue without Firebase service - will use offline data
+      }
       
-      // Try to load documents
+      // Try to load documents (will use offline storage if Firebase unavailable)
       await _loadDocuments();
     } catch (e) {
-      debugPrint('Error initializing document service: $e');
-      // Set error in state
-      state = state.copyWith(
-        error: 'Error initializing: $e',
-        isLoading: false,
-      );
+      debugPrint('Error in document initialization flow: $e');
+      // Try to load from offline storage as last resort
+      try {
+        final offlineDocuments = await _offlineStorage.getDocumentsOffline();
+        if (offlineDocuments.isNotEmpty) {
+          debugPrint('Loaded ${offlineDocuments.length} documents from offline storage as fallback');
+          state = state.copyWith(
+            documents: offlineDocuments,
+            filteredDocuments: List<TechnicalDocument>.from(offlineDocuments),
+            isLoading: false,
+            error: null,
+          );
+          _applyFilters();
+          return;
+        }
+      } catch (offlineError) {
+        debugPrint('Offline storage also failed: $offlineError');
+      }
+      
+      // Final fallback to local assets
+      await _loadLocalDocuments();
     }
   }
 
@@ -108,10 +133,6 @@ class DocumentNotifier extends _$DocumentNotifier {
 
   // Load documents from Firestore
   Future<void> _loadDocuments() async {
-    if (_documentService == null) {
-      debugPrint('Document service not initialized');
-      return;
-    }
   
     debugPrint('Loading documents...');
     
@@ -119,20 +140,36 @@ class DocumentNotifier extends _$DocumentNotifier {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Try loading from Firebase first
+      // Check connectivity and load accordingly
       List<TechnicalDocument> documents = [];
       
-      try {
-        documents = await _documentService?.getAllDocuments() ?? [];
-        debugPrint('Loaded ${documents.length} documents from Firebase');
-      } catch (e) {
-        debugPrint('Error loading from Firebase: $e');
-        documents = [];
+      if (_connectivityService.isOnline && _documentService != null) {
+        // Online: Try Firebase first, fallback to offline storage
+        try {
+          documents = await _documentService?.getAllDocuments() ?? [];
+          debugPrint('Loaded ${documents.length} documents from Firebase');
+          
+          // Save to offline storage for future offline access
+          if (documents.isNotEmpty) {
+            await _offlineStorage.saveDocumentsOffline(documents);
+            debugPrint('Saved documents to offline storage');
+          }
+        } catch (e) {
+          debugPrint('Error loading from Firebase: $e');
+          // Fallback to offline storage
+          documents = await _offlineStorage.getDocumentsOffline();
+          debugPrint('Loaded ${documents.length} documents from offline storage (Firebase failed)');
+        }
+      } else {
+        // Offline or Firebase unavailable: Load from offline storage only
+        debugPrint('Device offline or Firebase unavailable, loading from offline storage');
+        documents = await _offlineStorage.getDocumentsOffline();
+        debugPrint('Loaded ${documents.length} documents from offline storage');
       }
       
-      // If Firebase fails or returns empty, load from local
+      // If no documents from either source, load from local assets
       if (documents.isEmpty) {
-        debugPrint('No documents from Firebase, loading local...');
+        debugPrint('No documents from any source, loading local assets...');
         await _loadLocalDocuments();
         return;
       }
@@ -213,8 +250,20 @@ class DocumentNotifier extends _$DocumentNotifier {
         currentDownloadStatus[doc.id] = doc.isDownloaded;
       }
       
-      // Load fresh documents from Firebase
-      final documents = await _documentService?.getAllDocuments() ?? [];
+      List<TechnicalDocument> documents = [];
+      
+      if (_connectivityService.isOnline) {
+        // Load fresh documents from Firebase
+        documents = await _documentService?.getAllDocuments() ?? [];
+        
+        // Save to offline storage
+        if (documents.isNotEmpty) {
+          await _offlineStorage.saveDocumentsOffline(documents);
+        }
+      } else {
+        // Load from offline storage when offline
+        documents = await _offlineStorage.getDocumentsOffline();
+      }
       
       // Sort documents by most recent first
       documents.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));

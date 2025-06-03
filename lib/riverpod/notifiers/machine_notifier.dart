@@ -129,6 +129,7 @@ class MachineNotifier extends _$MachineNotifier {
   }
   
   // Check if machines are cached
+  // ignore: avoid_public_notifier_properties
   bool get hasCachedMachines => _hasLoadedOnce && state.machines.isNotEmpty;
   
   // Get machine by ID

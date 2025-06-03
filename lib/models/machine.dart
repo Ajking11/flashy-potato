@@ -35,7 +35,21 @@ class Machine {
       'description': description,
       'documentPath': documentPath,
       'displayInApp': displayInApp,
+      'machineId': machineId,
     };
+  }
+  
+  // Create from JSON (for offline storage)
+  factory Machine.fromJson(Map<String, dynamic> json) {
+    return Machine(
+      manufacturer: json['manufacturer'] ?? '',
+      model: json['model'] ?? '',
+      imagePath: json['imagePath'],
+      description: json['description'],
+      documentPath: json['documentPath'],
+      displayInApp: json['displayInApp'] ?? true,
+      machineId: json['machineId'],
+    );
   }
   
   // Create from Firestore document

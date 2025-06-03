@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'constants.dart';
 import 'services/permissions_service.dart';
 import 'services/theme_service.dart';
 import 'services/logger_service.dart';
 import 'services/notification_service.dart';
+import 'services/connectivity_service.dart';
+import 'services/sync_service.dart';
 import 'navigation/app_router.dart';
+import 'widgets/offline_indicator.dart';
 
 // Background FCM handler - must be defined outside of any class
 // This is required for background message handling to work properly
@@ -42,25 +46,71 @@ Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     
+    // Initialize Firebase with timeout and error handling
+    bool firebaseInitialized = false;
     try {
-      // Initialize Firebase with error handling
+      // Add timeout to prevent hanging during offline startup
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      );
+      ).timeout(const Duration(seconds: 10));
       
-      // Set up background message handler for FCM
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      // Enable Firestore offline persistence
+      FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
       
-      // Request notification permissions
-      await FirebaseMessaging.instance.requestPermission();
-      
-      // Initialize notification service
-      await notificationService.initialize();
-      
-      logger.i('Firebase', 'Firebase initialized successfully');
+      firebaseInitialized = true;
+      logger.i('Firebase', 'Firebase initialized with offline persistence');
     } catch (e) {
       logger.e('Firebase', 'Error initializing Firebase', e);
-      // Continue anyway to allow app to run with local data
+      // Continue without Firebase - app will work in offline mode
+    }
+    
+    // Initialize connectivity monitoring (always runs)
+    try {
+      ConnectivityService.instance.startMonitoring();
+      logger.i('Connectivity', 'Connectivity monitoring started');
+    } catch (e) {
+      logger.e('Connectivity', 'Error starting connectivity monitoring', e);
+    }
+    
+    // Initialize Firebase-dependent services only if Firebase is available
+    if (firebaseInitialized) {
+      try {
+        // Set up background message handler for FCM with timeout
+        await Future.wait([
+          Future(() async {
+            FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+          }),
+          Future(() async {
+            // Request notification permissions with timeout
+            await FirebaseMessaging.instance.requestPermission();
+          }).timeout(const Duration(seconds: 5)),
+        ]).timeout(const Duration(seconds: 8));
+        
+        logger.i('FCM', 'Firebase messaging initialized');
+      } catch (e) {
+        logger.e('FCM', 'Error initializing Firebase messaging', e);
+        // Continue without FCM
+      }
+      
+      try {
+        // Initialize background sync (depends on Firebase services)
+        SyncService.instance.initializeFirebaseServices();
+        SyncService.instance.startBackgroundSync();
+        logger.i('Sync', 'Background sync started');
+      } catch (e) {
+        logger.e('Sync', 'Error starting background sync', e);
+      }
+    } else {
+      logger.w('Firebase', 'Running in offline-only mode - Firebase services unavailable');
+    }
+    
+    // Initialize notification service (works independently of Firebase)
+    try {
+      await notificationService.initialize().timeout(const Duration(seconds: 5));
+      logger.i('Notifications', 'Notification service initialized');
+    } catch (e) {
+      logger.e('Notifications', 'Error initializing notification service', e);
+      // Continue without notifications
     }
     
     // Simple provider container without extra observers that might cause errors
@@ -146,6 +196,11 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: ThemeService.getLightTheme(),
       debugShowCheckedModeBanner: true,
       routerConfig: AppRouter.router,
+      builder: (context, child) {
+        return OfflineIndicator(
+          child: child ?? const SizedBox(),
+        );
+      },
     );
   }
 }
