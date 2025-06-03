@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../constants.dart';
 import '../services/logger_service.dart';
 import '../widgets/fade_animation.dart';
+import '../widgets/connection_status_icon.dart';
 import '../models/document.dart';
 import '../riverpod/providers/document_providers.dart';
 import '../riverpod/providers/software_providers.dart';
@@ -26,6 +27,7 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: costaRed,
         elevation: 0,
         actions: [
+          const ConnectionStatusIcon(),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => context.pushNamed('preferences'),
