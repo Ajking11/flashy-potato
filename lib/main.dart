@@ -15,7 +15,6 @@ import 'services/notification_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/sync_service.dart';
 import 'navigation/app_router.dart';
-import 'widgets/offline_indicator.dart';
 
 // Background FCM handler - must be defined outside of any class
 // This is required for background message handling to work properly
@@ -197,9 +196,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       debugShowCheckedModeBanner: true,
       routerConfig: AppRouter.router,
       builder: (context, child) {
-        return OfflineIndicator(
-          child: child ?? const SizedBox(),
-        );
+        return child ?? const SizedBox();
       },
     );
   }

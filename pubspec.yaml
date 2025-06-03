@@ -1,7 +1,7 @@
 name: costa_toolbox
 description: "A comprehensive toolkit for Costa Coffee field service engineers."
 publish_to: 'none'
-version: 0.5.260+7
+version: 0.5.272+8
 
 environment:
   sdk: ^3.5.4
