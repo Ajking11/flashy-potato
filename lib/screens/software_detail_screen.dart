@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/software.dart';
 import '../constants.dart';
 import '../models/machine.dart';
@@ -743,13 +744,13 @@ class UsbTransferWizard extends ConsumerWidget {
                           content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.'),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => context.pop(),
                               child: const Text('Continue Transfer'),
                             ),
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.pop(context); // Close dialog
-                                Navigator.pop(context); // Close bottom sheet
+                                context.pop(); // Close dialog
+                                context.pop(); // Close bottom sheet
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
@@ -761,7 +762,7 @@ class UsbTransferWizard extends ConsumerWidget {
                         ),
                       );
                     } else {
-                      Navigator.pop(context);
+                      context.pop();
                     }
                   },
                 ),
@@ -804,7 +805,7 @@ class UsbTransferWizard extends ConsumerWidget {
             }
           } else if (currentStep == 2 && isTransferComplete) {
             // Done with transfer, can close the wizard
-            Navigator.pop(context);
+            context.pop();
           }
         },
         onStepCancel: () {

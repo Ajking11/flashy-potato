@@ -203,7 +203,7 @@ nbdist/
 *.elc
 auto-save-list/
 
-# Other IDEs
+# Other IDEs & Miscellaneous
 FLUTTER_FCM_INTEGRATION.md
 FUTURE.md
 .idea/
@@ -212,3 +212,4 @@ FUTURE.md
 *.iws
 .idea_modules/
 **/.claude/settings.local.json
+usb.txt

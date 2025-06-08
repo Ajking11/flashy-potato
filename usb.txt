@@ -1,4 +1,4 @@
-USB Transfer System - Process Flow
+USB Transfer System - Enhanced Process Flow
 Step 1: Preparation Phase
 
 Start USB Transfer
@@ -8,55 +8,71 @@ If file not found → Show Error: File Missing → END (Error)
 If file exists → Progress: 5% - File Validated
 
 
-
-Step 2: USB Detection Phase
+Step 2: USB Detection & Cleanup Phase
 
 Use SAF File Picker (Android 10+ Storage Access Framework)
 User Selects Destination
 
 If cancelled → Transfer Cancelled → END (Cancelled)
-If selected → Check USB Contents
+If selected → Scan USB Contents for Existing Files
 
 
-Check USB Contents
+Scan USB Contents
 
-If existing files found → Delete Existing Files
-
-If deletion fails → Show Cleanup Error → END (Error)
-If deletion succeeds → Progress: 15% - Destination Set
+If existing files found → Show File List with Confirmation Dialog
+    
+    User Confirmation Required:
+    "Found X existing files. Do you want to delete them?"
+    - List all files to be deleted
+    - "Confirm & Continue" button
+    - "Cancel & Choose Different Location" button
+    
+    If user cancels → Return to destination selection
+    If user confirms → Delete Existing Files
+    
+    If deletion fails → Show Cleanup Error → END (Error)
+    If deletion succeeds → Progress: 15% - Destination Set
 
 
 If no files found → Progress: 15% - Destination Set
 
 
-
-Step 3: Transfer Phase
+Step 3: Transfer Phase with Enhanced UX
 ZIP Verification
 
 Progress: 25% - Preparing ZIP Verification
+Initialize Time Estimation (based on file size)
 Calculate ZIP SHA256 Hash
 Compare with Stored Hash
+
+Check for Cancellation (user can abort at any time)
 
 If hash mismatch → Show File Integrity Error → END (Error)
 If hash match → Progress: 35% - ZIP Verified
 
 
+Content Extraction & Transfer with Real-time Progress
 
-Content Extraction & Transfer
-
-Extract ZIP Contents
+Extract ZIP Contents with Granular Progress (75% → 95%)
 Create Directory Structure
 Progress: 55% - Structure Created
-Move Extracted Content to USB
-Progress: 75% - Content Moved
 
-Error Recovery
+For each file being extracted:
+    Check for Cancellation
+    Update Progress: 75% + (20% × files_extracted/total_files)
+    Update Time Estimate
+    Display: "Extracting: filename.ext (X/Y files)"
+
+Move Extracted Content to USB
+Progress: 75% - 95% (granular updates during extraction)
+
+Error Recovery with Multiple Fallbacks
 
 Content Move Successful?
 
-If failed → Try Fallback Method 1
+If failed → Try Fallback Method 1 (SAF or Direct Write)
 
-If Fallback 1 fails → Try Fallback Method 2
+If Fallback 1 fails → Try Fallback Method 2 (Force Direct Write)
 
 If Fallback 2 fails → Show User-Friendly Error → END (Error)
 If Fallback 2 succeeds → Progress: 100% - Success
@@ -67,27 +83,63 @@ If Fallback 1 succeeds → Progress: 100% - Success
 
 If successful → Progress: 100% - Success
 
-
+Clear Time Estimation
 Show Success Message
 END (Success)
 
 
-Key Features Implemented
+Enhanced UX Features Implemented
+
+Cancellation Support:
+- Users can cancel transfer at any stage (except during critical file operations)
+- Graceful cancellation with proper state cleanup
+- Cancel button available throughout process
+
+User Confirmation for File Deletion:
+- Pre-transfer scanning of destination directory
+- Display list of files that will be deleted
+- User must explicitly confirm deletion before proceeding
+- Option to choose different destination if files exist
+
+Estimated Time Remaining:
+- Dynamic time calculation based on file size and current progress
+- Human-readable format: "2m 30s remaining", "45s remaining"
+- Updates in real-time during transfer operations
+- Cleared upon completion
+
+Real-time Progress Granularity:
+- Smooth progress updates from 75% to 95% during ZIP extraction
+- Individual file extraction progress display
+- No large progress jumps - granular updates for better UX
+- Progress tied to actual file operations
 
 Android 10+ SAF Compatibility: Uses Storage Access Framework for secure file access
-Pre-transfer Cleanup: Automatically removes existing files from destination
+Pre-transfer Cleanup: User-confirmed removal of existing files from destination
 SHA256 Verification: Validates ZIP file integrity before extraction
-ZIP Extraction: Automatically extracts and structures content
-Progress Tracking: 6-phase progress system (5% → 15% → 25% → 35% → 55% → 75% → 100%)
+ZIP Extraction: Automatically extracts and structures content with real-time feedback
+Progress Tracking: Enhanced 7-phase progress system with granular updates
 Error Recovery: Multiple fallback methods for failed transfers
 User-friendly Error Messages: Clear error reporting at each potential failure point
 
-Progress Phases
-Phase   Percentage  Description
-1       5%          File Validated
-2       15%         Destination Set
-3       25%         Preparing ZIP Verification
-4       35%         ZIP Verified
-5       55%         Structure Created
-6       75%         Content Moved
-7       100%        Success
+Enhanced Progress Phases
+Phase   Percentage      Description                          Features
+1       5%             File Validated                       Initial validation
+2       15%            Destination Set                      After cleanup confirmation
+3       25%            Preparing ZIP Verification          Time estimation begins
+4       35%            ZIP Verified                        Cancellation checkpoints
+5       55%            Structure Created                   Pre-extraction setup
+6       75% → 95%      Content Moved (Granular)           Real-time file extraction progress
+7       100%           Success                             Time estimation cleared
+
+Cancellation Points:
+- During file reading (Step 3)
+- During ZIP verification (Step 4) 
+- Before extraction (Step 5)
+- During each file extraction (Step 6)
+- During fallback attempts
+
+User Interaction Points:
+- File deletion confirmation dialog (Step 2)
+- Cancel transfer button (throughout process)
+- Destination selection retry (if deletion declined)
+- Real-time progress and time estimates (Steps 3-6)
