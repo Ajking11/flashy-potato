@@ -27,6 +27,13 @@ class UsbTransferState {
   final String? usbDisplayName;  // User-friendly name of the USB drive
   final bool safAccessGranted;   // Whether user has granted SAF permission
   
+  // Enhanced UX fields
+  final bool isCancelled;        // Whether transfer was cancelled by user
+  final bool isCancellable;      // Whether transfer can be cancelled at current stage
+  final int? estimatedTimeRemainingSeconds; // Estimated time remaining in seconds
+  final List<String> filesToDelete; // Files found that will be deleted
+  final bool needsDeleteConfirmation; // Whether user needs to confirm file deletion
+  
   final String? error;
 
   const UsbTransferState({
@@ -43,6 +50,11 @@ class UsbTransferState {
     this.destinationUri,
     this.usbDisplayName,
     this.safAccessGranted = false,
+    this.isCancelled = false,
+    this.isCancellable = true,
+    this.estimatedTimeRemainingSeconds,
+    this.filesToDelete = const [],
+    this.needsDeleteConfirmation = false,
     this.error,
   });
 
@@ -64,6 +76,11 @@ class UsbTransferState {
     String? destinationUri,
     String? usbDisplayName,
     bool? safAccessGranted,
+    bool? isCancelled,
+    bool? isCancellable,
+    int? estimatedTimeRemainingSeconds,
+    List<String>? filesToDelete,
+    bool? needsDeleteConfirmation,
     String? error,
   }) {
     return UsbTransferState(
@@ -80,6 +97,11 @@ class UsbTransferState {
       destinationUri: destinationUri ?? this.destinationUri,
       usbDisplayName: usbDisplayName ?? this.usbDisplayName,
       safAccessGranted: safAccessGranted ?? this.safAccessGranted,
+      isCancelled: isCancelled ?? this.isCancelled,
+      isCancellable: isCancellable ?? this.isCancellable,
+      estimatedTimeRemainingSeconds: estimatedTimeRemainingSeconds ?? this.estimatedTimeRemainingSeconds,
+      filesToDelete: filesToDelete ?? this.filesToDelete,
+      needsDeleteConfirmation: needsDeleteConfirmation ?? this.needsDeleteConfirmation,
       error: error,
     );
   }
@@ -101,6 +123,11 @@ class UsbTransferState {
         other.destinationUri == destinationUri &&
         other.usbDisplayName == usbDisplayName &&
         other.safAccessGranted == safAccessGranted &&
+        other.isCancelled == isCancelled &&
+        other.isCancellable == isCancellable &&
+        other.estimatedTimeRemainingSeconds == estimatedTimeRemainingSeconds &&
+        listEquals(other.filesToDelete, filesToDelete) &&
+        other.needsDeleteConfirmation == needsDeleteConfirmation &&
         other.error == error;
   }
 
@@ -120,6 +147,11 @@ class UsbTransferState {
       destinationUri,
       usbDisplayName,
       safAccessGranted,
+      isCancelled,
+      isCancellable,
+      estimatedTimeRemainingSeconds,
+      Object.hashAll(filesToDelete),
+      needsDeleteConfirmation,
       error,
     );
   }

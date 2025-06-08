@@ -1,0 +1,93 @@
+USB Transfer System - Process Flow
+Step 1: Preparation Phase
+
+Start USB Transfer
+Validate Local Software File
+
+If file not found → Show Error: File Missing → END (Error)
+If file exists → Progress: 5% - File Validated
+
+
+
+Step 2: USB Detection Phase
+
+Use SAF File Picker (Android 10+ Storage Access Framework)
+User Selects Destination
+
+If cancelled → Transfer Cancelled → END (Cancelled)
+If selected → Check USB Contents
+
+
+Check USB Contents
+
+If existing files found → Delete Existing Files
+
+If deletion fails → Show Cleanup Error → END (Error)
+If deletion succeeds → Progress: 15% - Destination Set
+
+
+If no files found → Progress: 15% - Destination Set
+
+
+
+Step 3: Transfer Phase
+ZIP Verification
+
+Progress: 25% - Preparing ZIP Verification
+Calculate ZIP SHA256 Hash
+Compare with Stored Hash
+
+If hash mismatch → Show File Integrity Error → END (Error)
+If hash match → Progress: 35% - ZIP Verified
+
+
+
+Content Extraction & Transfer
+
+Extract ZIP Contents
+Create Directory Structure
+Progress: 55% - Structure Created
+Move Extracted Content to USB
+Progress: 75% - Content Moved
+
+Error Recovery
+
+Content Move Successful?
+
+If failed → Try Fallback Method 1
+
+If Fallback 1 fails → Try Fallback Method 2
+
+If Fallback 2 fails → Show User-Friendly Error → END (Error)
+If Fallback 2 succeeds → Progress: 100% - Success
+
+
+If Fallback 1 succeeds → Progress: 100% - Success
+
+
+If successful → Progress: 100% - Success
+
+
+Show Success Message
+END (Success)
+
+
+Key Features Implemented
+
+Android 10+ SAF Compatibility: Uses Storage Access Framework for secure file access
+Pre-transfer Cleanup: Automatically removes existing files from destination
+SHA256 Verification: Validates ZIP file integrity before extraction
+ZIP Extraction: Automatically extracts and structures content
+Progress Tracking: 6-phase progress system (5% → 15% → 25% → 35% → 55% → 75% → 100%)
+Error Recovery: Multiple fallback methods for failed transfers
+User-friendly Error Messages: Clear error reporting at each potential failure point
+
+Progress Phases
+Phase   Percentage  Description
+1       5%          File Validated
+2       15%         Destination Set
+3       25%         Preparing ZIP Verification
+4       35%         ZIP Verified
+5       55%         Structure Created
+6       75%         Content Moved
+7       100%        Success

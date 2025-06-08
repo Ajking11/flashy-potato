@@ -307,15 +307,28 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
     state = state.copyWith(
       transferStarted: true,
       transferProgress: 0.05,
-      transferStatus: 'Preparing software package...',
+      transferStatus: 'File Validated',
       error: null, // Clear any previous errors
     );
 
     try {
+      // Step 1: Scan destination and wait for user confirmation if needed
+      await _scanDestinationFiles();
+      
+      // If confirmation is needed, exit here - user must call confirmDeletion()
+      if (state.needsDeleteConfirmation) {
+        return;
+      }
+      
+      state = state.copyWith(
+        transferProgress: 0.15,
+        transferStatus: 'Destination Set',
+      );
+
       final Software software = ref.read(softwareByIdProvider(softwareId));
       final isAndroid10Plus = await _isAndroid10OrHigher();
 
-      // Step 1: Check source file
+      // Step 2: Check source file exists
       final sourceFile = File(state.sourcePath!);
       if (!await sourceFile.exists()) {
         state = state.copyWith(
@@ -326,29 +339,32 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         return;
       }
 
-      // Update progress
-      state = state.copyWith(
-        transferProgress: 0.1,
-        transferStatus: 'Reading source file...',
-      );
-
-      // Step 2: Read source file into memory
+      // Step 3: Read source file into memory
+      _checkCancellation();
       final Uint8List fileBytes = await sourceFile.readAsBytes();
+      final fileSizeBytes = fileBytes.length;
+      
+      // Initialize time estimation
+      _updateTimeEstimate(fileSizeBytes, 0.25);
 
+      // Step 4: ZIP Verification Phase (25% - 35%)
+      _checkCancellation();
       state = state.copyWith(
         transferProgress: 0.25,
-        transferStatus: 'Preparing file for transfer...',
+        transferStatus: 'Preparing ZIP Verification',
       );
 
-      // Step 3: Check if it's a ZIP file and validate structure
       final String fileExt = _getFileExtension(state.sourcePath!).toLowerCase();
       final bool isZipFile = fileExt == '.zip';
       
       if (isZipFile) {
-        state = state.copyWith(
-          transferProgress: 0.3,
-          transferStatus: 'Validating ZIP archive structure...',
-        );
+        // Calculate and verify ZIP SHA256 hash
+        if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          final calculatedHash = sha256.convert(fileBytes).toString();
+          if (calculatedHash != software.sha256FileHash) {
+            throw Exception('File integrity check failed - corrupted download');
+          }
+        }
         
         // Validate ZIP structure
         try {
@@ -360,30 +376,40 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         } catch (e) {
           throw Exception('Invalid ZIP file: $e');
         }
-      }
-
-      // Step 4: Verify file integrity if we have a hash
-      state = state.copyWith(
-        transferProgress: 0.4,
-        transferStatus: 'Verifying package integrity...',
-      );
-
-      if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
-        final calculatedHash = sha256.convert(fileBytes).toString();
-        if (calculatedHash != software.sha256FileHash) {
-          throw Exception('File integrity check failed - corrupted download');
+        
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.35);
+        state = state.copyWith(
+          transferProgress: 0.35,
+          transferStatus: 'ZIP Verified',
+        );
+      } else {
+        // For non-ZIP files, still verify integrity if hash available
+        if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          final calculatedHash = sha256.convert(fileBytes).toString();
+          if (calculatedHash != software.sha256FileHash) {
+            throw Exception('File integrity check failed - corrupted download');
+          }
         }
-        debugPrint('File integrity verification successful');
+        
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.35);
+        state = state.copyWith(
+          transferProgress: 0.35,
+          transferStatus: 'File Verified',
+        );
       }
 
-      // Step 5: Handle ZIP extraction or direct file transfer
+      // Step 5: Content Extraction & Transfer (55% - 75%)
       String? outputPath;
       
       if (isZipFile) {
-        // Extract ZIP contents to USB root
+        // Extract ZIP contents and create directory structure
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.55);
         state = state.copyWith(
-          transferProgress: 0.5,
-          transferStatus: 'Extracting software package to destination...',
+          transferProgress: 0.55,
+          transferStatus: 'Structure Created',
         );
         
         outputPath = await _extractZipToDestination(
@@ -397,55 +423,12 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         final fileName = software.filePath.split('/').last;
         
         state = state.copyWith(
-          transferProgress: 0.5,
-          transferStatus: 'Preparing to save $fileName to selected location...',
+          transferProgress: 0.55,
+          transferStatus: 'Structure Created',
         );
 
-        // Choose transfer approach based on Android version and saved path
-        if (isAndroid10Plus || !_canWriteDirectly(state.usbMountPath!)) {
-          // SAF approach for Android 10+ or inaccessible paths
-          
-          // Create a temporary file for the dialog
-          final tempDir = await getTemporaryDirectory();
-          final tempFile = File('${tempDir.path}/$fileName');
-          await tempFile.writeAsBytes(fileBytes);
-          
-          state = state.copyWith(
-            transferProgress: 0.6,
-            transferStatus: 'Saving file using system dialog...',
-          );
-
-          // Use the system dialog to save the file
-          final params = SaveFileDialogParams(
-            sourceFilePath: tempFile.path,
-            fileName: fileName,
-          );
-
-          try {
-            // Show the save dialog
-            outputPath = await FlutterFileDialog.saveFile(params: params);
-            
-            // Clean up temp file
-            if (await tempFile.exists()) {
-              await tempFile.delete();
-            }
-          } catch (e) {
-            // If FlutterFileDialog fails, try direct file writing as fallback
-            if (!isAndroid10Plus) {
-              outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
-            } else {
-              rethrow; // If on Android 10+ and SAF failed, let the error handler deal with it
-            }
-          }
-        } else {
-          // Direct file writing for older Android or obvious direct paths
-          state = state.copyWith(
-            transferProgress: 0.6,
-            transferStatus: 'Copying file to selected location...',
-          );
-          
-          outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
-        }
+        // Try multiple fallback methods for file transfer
+        outputPath = await _transferFileWithFallbacks(fileName, fileBytes, isAndroid10Plus);
       }
 
       // Handle user cancellation or failed writes
@@ -460,25 +443,14 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         return;
       }
 
-      // Step 6: Finalize transfer
-      state = state.copyWith(
-        transferProgress: 0.95,
-        transferStatus: 'Finalizing transfer...',
-        outputPath: outputPath,
-      );
-
-      // Small delay for final operations
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // Complete the transfer with appropriate message
-      final completionMessage = isZipFile 
-          ? 'Software package extracted successfully!' 
-          : 'File transfer complete!';
+      // Step 6: Finalize transfer (100%)
+      // outputPath should not be null at this point due to earlier validation
       
       state = state.copyWith(
         transferProgress: 1.0,
         transferComplete: true,
-        transferStatus: completionMessage,
+        transferStatus: 'Success',
+        outputPath: outputPath,
       );
     } catch (e, stack) {
       // Log the error and stack trace
@@ -508,8 +480,8 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       final archive = ZipDecoder().decodeBytes(zipBytes);
       
       state = state.copyWith(
-        transferProgress: 0.6,
-        transferStatus: 'Extracting ${archive.length} files to destination...',
+        transferProgress: 0.75,
+        transferStatus: 'Content Moved',
       );
       
       int extractedFiles = 0;
@@ -517,10 +489,12 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       
       // Extract each file in the archive
       for (final file in archive) {
-        // Update progress for each file
-        final progress = 0.6 + (0.3 * (extractedFiles / totalFiles));
+        _checkCancellation();
+        
+        // Update progress granularly from 75% to 95%
+        final extractionProgress = 0.75 + (0.20 * (extractedFiles / totalFiles));
         state = state.copyWith(
-          transferProgress: progress,
+          transferProgress: extractionProgress,
           transferStatus: 'Extracting: ${file.name} (${extractedFiles + 1}/$totalFiles)',
         );
         
@@ -555,11 +529,6 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
           await Future.delayed(const Duration(milliseconds: 10));
         }
       }
-      
-      state = state.copyWith(
-        transferProgress: 0.9,
-        transferStatus: 'Extraction complete! Finalizing transfer...',
-      );
       
       // Create a README file with extraction info
       await _createExtractionReadme(destinationPath, softwareName, totalFiles);
@@ -662,6 +631,328 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
     } else {
       return 'Could not complete the transfer. Please try again.';
     }
+  }
+  
+  // Scan destination for existing files and prepare for cleanup confirmation
+  Future<void> _scanDestinationFiles() async {
+    try {
+      if (state.usbMountPath == null) return;
+      
+      final destinationDir = Directory(state.usbMountPath!);
+      if (!await destinationDir.exists()) {
+        await destinationDir.create(recursive: true);
+        return;
+      }
+      
+      // Scan for existing files
+      final existingFiles = await destinationDir.list().toList();
+      
+      if (existingFiles.isNotEmpty) {
+        final fileNames = existingFiles
+            .map((e) => e.path.split('/').last)
+            .where((name) => name.isNotEmpty)
+            .toList();
+        
+        // Update state to show confirmation needed
+        state = state.copyWith(
+          filesToDelete: fileNames,
+          needsDeleteConfirmation: true,
+          transferStatus: 'Found ${fileNames.length} existing files. Confirm deletion to proceed.',
+        );
+        
+        // Pause here - user must call confirmDeletion() to proceed
+        return;
+      }
+    } catch (e) {
+      throw Exception('Could not scan destination directory: $e');
+    }
+  }
+  
+  // User confirms deletion of existing files and continues transfer
+  Future<void> confirmDeletion() async {
+    try {
+      await _performCleanup();
+      
+      state = state.copyWith(
+        transferProgress: 0.15,
+        transferStatus: 'Destination Set',
+        needsDeleteConfirmation: false,
+        filesToDelete: [],
+      );
+      
+      // Continue with the transfer process
+      await _continueTransferAfterCleanup();
+    } catch (e) {
+      state = state.copyWith(
+        error: 'Cleanup failed: Could not prepare destination directory',
+        transferStatus: 'Error: ${e.toString()}',
+      );
+    }
+  }
+  
+  // Continue transfer process after cleanup is complete
+  Future<void> _continueTransferAfterCleanup() async {
+    try {
+      final Software software = ref.read(softwareByIdProvider(softwareId));
+      final isAndroid10Plus = await _isAndroid10OrHigher();
+
+      // Step 2: Check source file exists
+      final sourceFile = File(state.sourcePath!);
+      if (!await sourceFile.exists()) {
+        state = state.copyWith(
+          transferProgress: 0,
+          transferStatus: 'Error: Source file not found',
+          error: 'Source file not found',
+        );
+        return;
+      }
+
+      // Step 3: Read source file into memory
+      _checkCancellation();
+      final Uint8List fileBytes = await sourceFile.readAsBytes();
+      final fileSizeBytes = fileBytes.length;
+      
+      // Initialize time estimation
+      _updateTimeEstimate(fileSizeBytes, 0.25);
+
+      // Step 4: ZIP Verification Phase (25% - 35%)
+      _checkCancellation();
+      state = state.copyWith(
+        transferProgress: 0.25,
+        transferStatus: 'Preparing ZIP Verification',
+      );
+
+      final String fileExt = _getFileExtension(state.sourcePath!).toLowerCase();
+      final bool isZipFile = fileExt == '.zip';
+      
+      if (isZipFile) {
+        // Calculate and verify ZIP SHA256 hash
+        if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          final calculatedHash = sha256.convert(fileBytes).toString();
+          if (calculatedHash != software.sha256FileHash) {
+            throw Exception('File integrity check failed - corrupted download');
+          }
+        }
+        
+        // Validate ZIP structure
+        try {
+          final archive = ZipDecoder().decodeBytes(fileBytes);
+          if (archive.isEmpty) {
+            throw Exception('ZIP file is empty or corrupted');
+          }
+          debugPrint('ZIP validation successful: ${archive.length} files found');
+        } catch (e) {
+          throw Exception('Invalid ZIP file: $e');
+        }
+        
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.35);
+        state = state.copyWith(
+          transferProgress: 0.35,
+          transferStatus: 'ZIP Verified',
+        );
+      } else {
+        // For non-ZIP files, still verify integrity if hash available
+        if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          final calculatedHash = sha256.convert(fileBytes).toString();
+          if (calculatedHash != software.sha256FileHash) {
+            throw Exception('File integrity check failed - corrupted download');
+          }
+        }
+        
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.35);
+        state = state.copyWith(
+          transferProgress: 0.35,
+          transferStatus: 'File Verified',
+        );
+      }
+
+      // Step 5: Content Extraction & Transfer (55% - 75%)
+      String? outputPath;
+      
+      if (isZipFile) {
+        // Extract ZIP contents and create directory structure
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.55);
+        state = state.copyWith(
+          transferProgress: 0.55,
+          transferStatus: 'Structure Created',
+        );
+        
+        outputPath = await _extractZipToDestination(
+          fileBytes, 
+          state.usbMountPath!, 
+          isAndroid10Plus,
+          software.name,
+        );
+      } else {
+        // Regular file transfer (non-ZIP files)
+        final fileName = software.filePath.split('/').last;
+        
+        _checkCancellation();
+        _updateTimeEstimate(fileSizeBytes, 0.55);
+        state = state.copyWith(
+          transferProgress: 0.55,
+          transferStatus: 'Structure Created',
+        );
+
+        // Try multiple fallback methods for file transfer
+        outputPath = await _transferFileWithFallbacks(fileName, fileBytes, isAndroid10Plus);
+      }
+
+      // Step 6: Finalize transfer (100%)
+      // outputPath should not be null at this point due to earlier validation
+      if (outputPath == null) {
+        throw Exception('Transfer failed - no output path returned');
+      }
+      
+      _updateTimeEstimate(fileSizeBytes, 1.0);
+      state = state.copyWith(
+        transferProgress: 1.0,
+        transferComplete: true,
+        transferStatus: 'Success',
+        outputPath: outputPath,
+        estimatedTimeRemainingSeconds: null,
+      );
+    } catch (e, stack) {
+      // Log the error and stack trace
+      debugPrintError(e, stack);
+      
+      // Update state with more user-friendly error message
+      final errorMsg = _getUserFriendlyErrorMessage(e.toString());
+      state = state.copyWith(
+        transferProgress: 0.0,
+        transferStarted: true,
+        transferComplete: false,
+        transferStatus: 'Error: $errorMsg',
+        error: 'Transfer failed: ${e.toString()}',
+        estimatedTimeRemainingSeconds: null,
+      );
+    }
+  }
+  
+  // User cancels deletion - they can choose different destination
+  void cancelDeletion() {
+    state = state.copyWith(
+      needsDeleteConfirmation: false,
+      filesToDelete: [],
+      usbDetected: false,
+      usbMountPath: null,
+      transferStatus: 'Please select a different destination or empty folder.',
+    );
+  }
+  
+  // Cancel the transfer operation
+  void cancelTransfer() {
+    state = state.copyWith(
+      isCancelled: true,
+      isCancellable: false,
+      transferStatus: 'Transfer cancelled by user',
+      transferProgress: 0.0,
+      transferStarted: false,
+    );
+  }
+  
+  // Check if transfer was cancelled by user
+  void _checkCancellation() {
+    if (state.isCancelled) {
+      throw Exception('Transfer cancelled by user');
+    }
+  }
+  
+  // Calculate estimated time remaining based on file size and progress
+  void _updateTimeEstimate(int fileSizeBytes, double currentProgress) {
+    if (currentProgress <= 0 || currentProgress >= 1.0) {
+      state = state.copyWith(estimatedTimeRemainingSeconds: null);
+      return;
+    }
+    
+    // Simple estimation based on progress rate
+    // In a real app, you'd track actual transfer speeds
+    final remainingProgress = 1.0 - currentProgress;
+    const avgBytesPerSecond = 1024 * 1024; // Assume 1MB/s average
+    final estimatedSeconds = (fileSizeBytes * remainingProgress / avgBytesPerSecond).round();
+    
+    state = state.copyWith(
+      estimatedTimeRemainingSeconds: estimatedSeconds.clamp(1, 300), // 1s to 5min max
+    );
+  }
+  
+  // Perform the actual cleanup after user confirmation
+  Future<void> _performCleanup() async {
+    if (state.usbMountPath == null) return;
+    
+    final destinationDir = Directory(state.usbMountPath!);
+    final existingFiles = await destinationDir.list().toList();
+    
+    for (final entity in existingFiles) {
+      try {
+        if (entity is File) {
+          await entity.delete();
+        } else if (entity is Directory) {
+          await entity.delete(recursive: true);
+        }
+      } catch (e) {
+        debugPrint('Warning: Could not delete ${entity.path}: $e');
+      }
+    }
+  }
+  
+  // Transfer file with multiple fallback methods
+  Future<String?> _transferFileWithFallbacks(
+    String fileName, 
+    Uint8List fileBytes, 
+    bool isAndroid10Plus
+  ) async {
+    String? outputPath;
+    
+    _checkCancellation();
+    _updateTimeEstimate(fileBytes.length, 0.75);
+    state = state.copyWith(
+      transferProgress: 0.75,
+      transferStatus: 'Content Moved',
+    );
+    
+    // Fallback Method 1: SAF or Direct Write (primary method)
+    try {
+      if (isAndroid10Plus || !_canWriteDirectly(state.usbMountPath!)) {
+        // SAF approach for Android 10+ or inaccessible paths
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsBytes(fileBytes);
+        
+        final params = SaveFileDialogParams(
+          sourceFilePath: tempFile.path,
+          fileName: fileName,
+        );
+        
+        outputPath = await FlutterFileDialog.saveFile(params: params);
+        
+        // Clean up temp file
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      } else {
+        // Direct file writing
+        outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
+      }
+      
+      if (outputPath != null) return outputPath;
+    } catch (e) {
+      debugPrint('Fallback Method 1 failed: $e');
+    }
+    
+    // Fallback Method 2: Force direct write
+    try {
+      outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
+      if (outputPath != null) return outputPath;
+    } catch (e) {
+      debugPrint('Fallback Method 2 failed: $e');
+    }
+    
+    // If both fallback methods fail, throw error
+    throw Exception('All transfer methods failed');
   }
   
   
