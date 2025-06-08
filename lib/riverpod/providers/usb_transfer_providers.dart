@@ -44,6 +44,16 @@ String? transferError(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.error));
 }
 
+@riverpod
+bool needsDeleteConfirmation(Ref ref, String softwareId) {
+  return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.needsDeleteConfirmation));
+}
+
+@riverpod
+List<String> filesToDelete(Ref ref, String softwareId) {
+  return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.filesToDelete));
+}
+
 // A more comprehensive provider that tells if there's an error state
 @riverpod
 bool hasTransferError(Ref ref, String softwareId) {
@@ -68,15 +78,6 @@ int? estimatedTimeRemaining(Ref ref, String softwareId) {
   return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.estimatedTimeRemainingSeconds));
 }
 
-@riverpod
-List<String> filesToDelete(Ref ref, String softwareId) {
-  return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.filesToDelete));
-}
-
-@riverpod
-bool needsDeleteConfirmation(Ref ref, String softwareId) {
-  return ref.watch(usbTransferNotifierProvider(softwareId).select((state) => state.needsDeleteConfirmation));
-}
 
 // Helper provider to format time remaining in a human-readable way
 @riverpod

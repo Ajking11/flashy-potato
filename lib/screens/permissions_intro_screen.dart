@@ -1,6 +1,7 @@
 // lib/screens/permissions_intro_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../constants.dart';
 import '../services/permissions_service.dart';
 
@@ -23,17 +24,22 @@ class _PermissionsIntroScreenState extends State<PermissionsIntroScreen> {
   }
 
   void _goToNextPage() {
-    if (_currentPage < 2) {
+    if (_currentPage == 0) {
+      // Welcome page -> Storage permission page
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-    } else {
-      _requestPermissions();
+    } else if (_currentPage == 1) {
+      // Storage permission page -> Request storage permission and go to notifications
+      _requestStoragePermission();
+    } else if (_currentPage == 2) {
+      // Notifications page -> Request notification permission and finish
+      _requestNotificationPermission();
     }
   }
 
-  Future<void> _requestPermissions() async {
+  Future<void> _requestStoragePermission() async {
     if (!mounted) return;
     
     setState(() {
@@ -41,23 +47,114 @@ class _PermissionsIntroScreenState extends State<PermissionsIntroScreen> {
     });
 
     try {
-      // Request permissions
-      await PermissionsService.requestPermissions();
+      debugPrint('🔐 Requesting external storage permission...');
       
-      // Mark that user has seen the intro screen
+      // Request MANAGE_EXTERNAL_STORAGE for Android 30+
+      final storageStatus = await Permission.manageExternalStorage.request();
+      debugPrint('🔐 Storage permission result: $storageStatus');
+      
+      if (!mounted) return;
+      
+      // Show result feedback
+      String message;
+      Color backgroundColor;
+      if (storageStatus.isGranted) {
+        message = 'Storage access granted! 📁';
+        backgroundColor = Colors.green;
+      } else {
+        message = 'Storage access denied. You can grant it later in settings.';
+        backgroundColor = Colors.orange;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: backgroundColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Wait a moment for user to see the feedback, then proceed to next page
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error requesting storage permission: $e');
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error requesting storage permission: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRequesting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isRequesting = true;
+    });
+
+    try {
+      debugPrint('🔔 Requesting notification permission...');
+      
+      // Request notification permission
+      final notificationStatus = await Permission.notification.request();
+      debugPrint('🔔 Notification permission result: $notificationStatus');
+      
+      if (!mounted) return;
+      
+      // Show result feedback
+      String message;
+      Color backgroundColor;
+      if (notificationStatus.isGranted) {
+        message = 'Notifications enabled! 🔔';
+        backgroundColor = Colors.green;
+      } else {
+        message = 'Notifications disabled. You can enable them later in settings.';
+        backgroundColor = Colors.orange;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: backgroundColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Mark that user has seen the intro screen and permissions were requested
       await PermissionsService.markPermissionIntroSeen();
+      await PermissionsService.markPermissionsAsked();
+      
+      // Wait a moment for user to see the feedback, then navigate to login
+      await Future.delayed(const Duration(milliseconds: 1000));
       
       if (!mounted) return;
       
       // Navigate to login screen
       context.go('/login');
     } catch (e) {
+      debugPrint('❌ Error requesting notification permission: $e');
       if (!mounted) return;
       
-      // Show error snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error requesting permissions: $e'),
+          content: Text('Error requesting notification permission: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -133,14 +230,14 @@ class _PermissionsIntroScreenState extends State<PermissionsIntroScreen> {
                   _buildPage(
                     icon: Icons.folder_outlined,
                     title: 'External Storage Access',
-                    description: 'We need access to external storage to transfer software to USB drives and save documents for offline use.',
+                    description: 'We need access to external storage to transfer software to USB drives and save documents for offline use.\n\nTap "Grant Storage Access" to open the Android permission dialog.',
                   ),
                   
                   // Notifications permission page
                   _buildPage(
                     icon: Icons.notifications_outlined,
                     title: 'Notifications',
-                    description: 'We use notifications to alert you about new documents, software updates, and important maintenance reminders.',
+                    description: 'We use notifications to alert you about new documents, software updates, and important maintenance reminders.\n\nTap "Grant Notifications" to open the Android permission dialog.',
                   ),
                 ],
               ),
@@ -161,13 +258,26 @@ class _PermissionsIntroScreenState extends State<PermissionsIntroScreen> {
                 ),
                 child: _isRequesting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(_currentPage < 2 ? 'Next' : 'Grant Permissions'),
+                    : Text(_getButtonText()),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _getButtonText() {
+    switch (_currentPage) {
+      case 0:
+        return 'Next';
+      case 1:
+        return 'Grant Storage Access';
+      case 2:
+        return 'Grant Notifications';
+      default:
+        return 'Next';
+    }
   }
 
   Widget _buildPage({

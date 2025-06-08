@@ -939,6 +939,269 @@ class _TransferErrorProviderElement extends AutoDisposeProviderElement<String?>
   String get softwareId => (origin as TransferErrorProvider).softwareId;
 }
 
+String _$needsDeleteConfirmationHash() =>
+    r'7fe6b7e35ec820ea7ef2a6da03721568a7d9e0f3';
+
+/// See also [needsDeleteConfirmation].
+@ProviderFor(needsDeleteConfirmation)
+const needsDeleteConfirmationProvider = NeedsDeleteConfirmationFamily();
+
+/// See also [needsDeleteConfirmation].
+class NeedsDeleteConfirmationFamily extends Family<bool> {
+  /// See also [needsDeleteConfirmation].
+  const NeedsDeleteConfirmationFamily();
+
+  /// See also [needsDeleteConfirmation].
+  NeedsDeleteConfirmationProvider call(
+    String softwareId,
+  ) {
+    return NeedsDeleteConfirmationProvider(
+      softwareId,
+    );
+  }
+
+  @override
+  NeedsDeleteConfirmationProvider getProviderOverride(
+    covariant NeedsDeleteConfirmationProvider provider,
+  ) {
+    return call(
+      provider.softwareId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'needsDeleteConfirmationProvider';
+}
+
+/// See also [needsDeleteConfirmation].
+class NeedsDeleteConfirmationProvider extends AutoDisposeProvider<bool> {
+  /// See also [needsDeleteConfirmation].
+  NeedsDeleteConfirmationProvider(
+    String softwareId,
+  ) : this._internal(
+          (ref) => needsDeleteConfirmation(
+            ref as NeedsDeleteConfirmationRef,
+            softwareId,
+          ),
+          from: needsDeleteConfirmationProvider,
+          name: r'needsDeleteConfirmationProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$needsDeleteConfirmationHash,
+          dependencies: NeedsDeleteConfirmationFamily._dependencies,
+          allTransitiveDependencies:
+              NeedsDeleteConfirmationFamily._allTransitiveDependencies,
+          softwareId: softwareId,
+        );
+
+  NeedsDeleteConfirmationProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.softwareId,
+  }) : super.internal();
+
+  final String softwareId;
+
+  @override
+  Override overrideWith(
+    bool Function(NeedsDeleteConfirmationRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: NeedsDeleteConfirmationProvider._internal(
+        (ref) => create(ref as NeedsDeleteConfirmationRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        softwareId: softwareId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<bool> createElement() {
+    return _NeedsDeleteConfirmationProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NeedsDeleteConfirmationProvider &&
+        other.softwareId == softwareId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, softwareId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin NeedsDeleteConfirmationRef on AutoDisposeProviderRef<bool> {
+  /// The parameter `softwareId` of this provider.
+  String get softwareId;
+}
+
+class _NeedsDeleteConfirmationProviderElement
+    extends AutoDisposeProviderElement<bool> with NeedsDeleteConfirmationRef {
+  _NeedsDeleteConfirmationProviderElement(super.provider);
+
+  @override
+  String get softwareId =>
+      (origin as NeedsDeleteConfirmationProvider).softwareId;
+}
+
+String _$filesToDeleteHash() => r'e3c9dae67b4479115678863eb5816cdf8cfeefbd';
+
+/// See also [filesToDelete].
+@ProviderFor(filesToDelete)
+const filesToDeleteProvider = FilesToDeleteFamily();
+
+/// See also [filesToDelete].
+class FilesToDeleteFamily extends Family<List<String>> {
+  /// See also [filesToDelete].
+  const FilesToDeleteFamily();
+
+  /// See also [filesToDelete].
+  FilesToDeleteProvider call(
+    String softwareId,
+  ) {
+    return FilesToDeleteProvider(
+      softwareId,
+    );
+  }
+
+  @override
+  FilesToDeleteProvider getProviderOverride(
+    covariant FilesToDeleteProvider provider,
+  ) {
+    return call(
+      provider.softwareId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'filesToDeleteProvider';
+}
+
+/// See also [filesToDelete].
+class FilesToDeleteProvider extends AutoDisposeProvider<List<String>> {
+  /// See also [filesToDelete].
+  FilesToDeleteProvider(
+    String softwareId,
+  ) : this._internal(
+          (ref) => filesToDelete(
+            ref as FilesToDeleteRef,
+            softwareId,
+          ),
+          from: filesToDeleteProvider,
+          name: r'filesToDeleteProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$filesToDeleteHash,
+          dependencies: FilesToDeleteFamily._dependencies,
+          allTransitiveDependencies:
+              FilesToDeleteFamily._allTransitiveDependencies,
+          softwareId: softwareId,
+        );
+
+  FilesToDeleteProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.softwareId,
+  }) : super.internal();
+
+  final String softwareId;
+
+  @override
+  Override overrideWith(
+    List<String> Function(FilesToDeleteRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: FilesToDeleteProvider._internal(
+        (ref) => create(ref as FilesToDeleteRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        softwareId: softwareId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<List<String>> createElement() {
+    return _FilesToDeleteProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FilesToDeleteProvider && other.softwareId == softwareId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, softwareId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin FilesToDeleteRef on AutoDisposeProviderRef<List<String>> {
+  /// The parameter `softwareId` of this provider.
+  String get softwareId;
+}
+
+class _FilesToDeleteProviderElement
+    extends AutoDisposeProviderElement<List<String>> with FilesToDeleteRef {
+  _FilesToDeleteProviderElement(super.provider);
+
+  @override
+  String get softwareId => (origin as FilesToDeleteProvider).softwareId;
+}
+
 String _$hasTransferErrorHash() => r'363eb9c069d1d99bf06227b6c06099dc4d4ba240';
 
 /// See also [hasTransferError].
@@ -1460,269 +1723,6 @@ class _EstimatedTimeRemainingProviderElement
   @override
   String get softwareId =>
       (origin as EstimatedTimeRemainingProvider).softwareId;
-}
-
-String _$filesToDeleteHash() => r'e3c9dae67b4479115678863eb5816cdf8cfeefbd';
-
-/// See also [filesToDelete].
-@ProviderFor(filesToDelete)
-const filesToDeleteProvider = FilesToDeleteFamily();
-
-/// See also [filesToDelete].
-class FilesToDeleteFamily extends Family<List<String>> {
-  /// See also [filesToDelete].
-  const FilesToDeleteFamily();
-
-  /// See also [filesToDelete].
-  FilesToDeleteProvider call(
-    String softwareId,
-  ) {
-    return FilesToDeleteProvider(
-      softwareId,
-    );
-  }
-
-  @override
-  FilesToDeleteProvider getProviderOverride(
-    covariant FilesToDeleteProvider provider,
-  ) {
-    return call(
-      provider.softwareId,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'filesToDeleteProvider';
-}
-
-/// See also [filesToDelete].
-class FilesToDeleteProvider extends AutoDisposeProvider<List<String>> {
-  /// See also [filesToDelete].
-  FilesToDeleteProvider(
-    String softwareId,
-  ) : this._internal(
-          (ref) => filesToDelete(
-            ref as FilesToDeleteRef,
-            softwareId,
-          ),
-          from: filesToDeleteProvider,
-          name: r'filesToDeleteProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$filesToDeleteHash,
-          dependencies: FilesToDeleteFamily._dependencies,
-          allTransitiveDependencies:
-              FilesToDeleteFamily._allTransitiveDependencies,
-          softwareId: softwareId,
-        );
-
-  FilesToDeleteProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.softwareId,
-  }) : super.internal();
-
-  final String softwareId;
-
-  @override
-  Override overrideWith(
-    List<String> Function(FilesToDeleteRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: FilesToDeleteProvider._internal(
-        (ref) => create(ref as FilesToDeleteRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        softwareId: softwareId,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeProviderElement<List<String>> createElement() {
-    return _FilesToDeleteProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is FilesToDeleteProvider && other.softwareId == softwareId;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, softwareId.hashCode);
-
-    return _SystemHash.finish(hash);
-  }
-}
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin FilesToDeleteRef on AutoDisposeProviderRef<List<String>> {
-  /// The parameter `softwareId` of this provider.
-  String get softwareId;
-}
-
-class _FilesToDeleteProviderElement
-    extends AutoDisposeProviderElement<List<String>> with FilesToDeleteRef {
-  _FilesToDeleteProviderElement(super.provider);
-
-  @override
-  String get softwareId => (origin as FilesToDeleteProvider).softwareId;
-}
-
-String _$needsDeleteConfirmationHash() =>
-    r'7fe6b7e35ec820ea7ef2a6da03721568a7d9e0f3';
-
-/// See also [needsDeleteConfirmation].
-@ProviderFor(needsDeleteConfirmation)
-const needsDeleteConfirmationProvider = NeedsDeleteConfirmationFamily();
-
-/// See also [needsDeleteConfirmation].
-class NeedsDeleteConfirmationFamily extends Family<bool> {
-  /// See also [needsDeleteConfirmation].
-  const NeedsDeleteConfirmationFamily();
-
-  /// See also [needsDeleteConfirmation].
-  NeedsDeleteConfirmationProvider call(
-    String softwareId,
-  ) {
-    return NeedsDeleteConfirmationProvider(
-      softwareId,
-    );
-  }
-
-  @override
-  NeedsDeleteConfirmationProvider getProviderOverride(
-    covariant NeedsDeleteConfirmationProvider provider,
-  ) {
-    return call(
-      provider.softwareId,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'needsDeleteConfirmationProvider';
-}
-
-/// See also [needsDeleteConfirmation].
-class NeedsDeleteConfirmationProvider extends AutoDisposeProvider<bool> {
-  /// See also [needsDeleteConfirmation].
-  NeedsDeleteConfirmationProvider(
-    String softwareId,
-  ) : this._internal(
-          (ref) => needsDeleteConfirmation(
-            ref as NeedsDeleteConfirmationRef,
-            softwareId,
-          ),
-          from: needsDeleteConfirmationProvider,
-          name: r'needsDeleteConfirmationProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$needsDeleteConfirmationHash,
-          dependencies: NeedsDeleteConfirmationFamily._dependencies,
-          allTransitiveDependencies:
-              NeedsDeleteConfirmationFamily._allTransitiveDependencies,
-          softwareId: softwareId,
-        );
-
-  NeedsDeleteConfirmationProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.softwareId,
-  }) : super.internal();
-
-  final String softwareId;
-
-  @override
-  Override overrideWith(
-    bool Function(NeedsDeleteConfirmationRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: NeedsDeleteConfirmationProvider._internal(
-        (ref) => create(ref as NeedsDeleteConfirmationRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        softwareId: softwareId,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeProviderElement<bool> createElement() {
-    return _NeedsDeleteConfirmationProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is NeedsDeleteConfirmationProvider &&
-        other.softwareId == softwareId;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, softwareId.hashCode);
-
-    return _SystemHash.finish(hash);
-  }
-}
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin NeedsDeleteConfirmationRef on AutoDisposeProviderRef<bool> {
-  /// The parameter `softwareId` of this provider.
-  String get softwareId;
-}
-
-class _NeedsDeleteConfirmationProviderElement
-    extends AutoDisposeProviderElement<bool> with NeedsDeleteConfirmationRef {
-  _NeedsDeleteConfirmationProviderElement(super.provider);
-
-  @override
-  String get softwareId =>
-      (origin as NeedsDeleteConfirmationProvider).softwareId;
 }
 
 String _$timeRemainingFormattedHash() =>

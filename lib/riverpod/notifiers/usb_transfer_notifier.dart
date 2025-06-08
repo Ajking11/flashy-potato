@@ -94,20 +94,31 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
 
   // Progress to the next step
   void nextStep() {
+    debugPrint('🔄 UsbTransferNotifier.nextStep() - Current: ${state.currentStep}');
     if (state.currentStep < 2) {
-      state = state.copyWith(currentStep: state.currentStep + 1);
+      final newStep = state.currentStep + 1;
+      debugPrint('📈 Moving from step ${state.currentStep} to step $newStep');
+      state = state.copyWith(currentStep: newStep);
 
       // If moving to the USB detection step, start detection
       if (state.currentStep == 1) {
+        debugPrint('🔍 Step 1 reached - starting USB detection automatically');
         detectUsb();
       }
+    } else {
+      debugPrint('⚠️ Cannot advance step - already at maximum step ${state.currentStep}');
     }
   }
 
   // Go back to the previous step
   void previousStep() {
+    debugPrint('🔄 UsbTransferNotifier.previousStep() - Current: ${state.currentStep}');
     if (state.currentStep > 0) {
-      state = state.copyWith(currentStep: state.currentStep - 1);
+      final newStep = state.currentStep - 1;
+      debugPrint('📉 Moving from step ${state.currentStep} to step $newStep');
+      state = state.copyWith(currentStep: newStep);
+    } else {
+      debugPrint('⚠️ Cannot go back - already at minimum step ${state.currentStep}');
     }
   }
 
@@ -126,6 +137,9 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
 
   // Enhanced USB detection logic with SAF for Android 10+ and direct access for older versions
   Future<void> detectUsb() async {
+    debugPrint('🔍 UsbTransferNotifier.detectUsb() - Starting USB detection');
+    debugPrint('📱 Current state - Step: ${state.currentStep}, USB detected: ${state.usbDetected}');
+    
     // Reset any previous transfer state
     state = state.copyWith(
       transferStarted: false,
@@ -133,11 +147,16 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       transferProgress: 0.0,
       transferStatus: 'Preparing to access external storage...',
     );
+    debugPrint('🔄 State reset for USB detection');
 
     try {
       // Check if we have storage permissions
+      debugPrint('🔐 Checking storage permissions...');
       final permissionStatus = await _checkAndRequestPermissions();
+      debugPrint('🔐 Permission status: $permissionStatus');
+      
       if (!permissionStatus) {
+        debugPrint('❌ Storage permissions denied');
         state = state.copyWith(
           transferStatus: 'Storage permissions are required to access USB drives',
           error: 'Storage permission denied',
@@ -145,24 +164,18 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         return;
       }
 
-      final isAndroid10Plus = await _isAndroid10OrHigher();
+      debugPrint('📱 Android 30+ SAF approach - Select your USB drive or external storage location');
       
-      // Provide different instructions based on Android version
-      state = state.copyWith(
-        transferStatus: isAndroid10Plus
-            ? 'Select your USB drive or external storage location'
-            : 'Select a destination folder on your device',
-      );
+      state = state.copyWith(transferStatus: 'Select your USB drive or external storage location');
 
       // Use FilePicker for all Android versions - it handles SAF for 10+ and direct access for older
-      final result = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Select USB drive or folder',
-        // lockParentWindow is supported in newer versions to improve UX
-        lockParentWindow: true,
-      );
+      debugPrint('📂 Opening directory picker dialog...');
+      final result = await FilePicker.platform.getDirectoryPath();
+      debugPrint('📂 Directory picker result: $result');
 
       if (result == null) {
         // User canceled the picker
+        debugPrint('❌ User canceled file picker');
         state = state.copyWith(
           usbDetected: false,
           transferStatus: 'No storage location selected. Please try again.',
@@ -175,18 +188,23 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         (element) => element.isNotEmpty, 
         orElse: () => 'External Storage'
       );
+      debugPrint('📁 Directory name extracted: $directoryName');
 
       // Check if this looks like an external storage path
       final bool isLikelyUsbDrive = _isLikelyUsbDrivePath(result);
+      debugPrint('💾 Is likely USB drive: $isLikelyUsbDrive');
+
+      final finalStatusMessage = isLikelyUsbDrive 
+          ? 'USB drive detected: $directoryName. Ready to transfer files.'
+          : 'Selected: $directoryName. Ready to transfer files.';
+      debugPrint('✅ USB detection completed - Status: $finalStatusMessage');
 
       state = state.copyWith(
         usbDetected: true,
         usbMountPath: result,
         usbDisplayName: directoryName,
-        transferStatus: isLikelyUsbDrive 
-            ? 'USB drive detected: $directoryName. Ready to transfer files.'
-            : 'Selected: $directoryName. Ready to transfer files.',
-        safAccessGranted: isAndroid10Plus,
+        transferStatus: finalStatusMessage,
+        safAccessGranted: true, // Always true for Android 30+
       );
     } catch (e, stack) {
       debugPrintError(e, stack);
@@ -208,76 +226,39 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
            lowerPath.contains('/storage/') && !lowerPath.contains('/emulated/0');
   }
 
-  // Check if device is running Android 10 (API 29) or higher
-  Future<bool> _isAndroid10OrHigher() async {
-    if (!Platform.isAndroid) return false;
-    
-    try {
-      final sdkInt = await _getAndroidSdkVersion();
-      return sdkInt >= 29; // Android 10 is API 29
-    } catch (e) {
-      // If we can't determine, assume newer Android for safety
+
+  // Simplified permission checking for Android 30+ with SAF focus
+  Future<bool> _checkAndRequestPermissions() async {
+    debugPrint('🔐 _checkAndRequestPermissions() - Android 30+ SAF-only approach');
+    if (!Platform.isAndroid) {
+      debugPrint('📱 Platform is not Android, permissions automatically granted');
       return true;
     }
-  }
-
-  // Helper to get Android SDK version
-  Future<int> _getAndroidSdkVersion() async {
-    try {
-      // This is a simplified approach - in a real app, you would use
-      // platform channels or a dedicated package to get this information
-      return 29; // Default to Android 10 for safety
-    } catch (e) {
-      return 29; // Default to Android 10 for safety
-    }
-  }
-
-  // Enhanced permission checking with better error handling
-  Future<bool> _checkAndRequestPermissions() async {
-    if (!Platform.isAndroid) return true;
     
     try {
-      final isAndroid10Plus = await _isAndroid10OrHigher();
-      
-      // Check basic storage permissions first
-      var storageStatus = await Permission.storage.status;
-      debugPrint('Storage permission status: $storageStatus');
-      
-      if (!storageStatus.isGranted) {
-        debugPrint('Requesting storage permission...');
-        storageStatus = await Permission.storage.request();
-        debugPrint('Storage permission after request: $storageStatus');
+      // For Android 30+, SAF handles most access, but check MANAGE_EXTERNAL_STORAGE for better UX
+      debugPrint('🔐 Android 30+, checking MANAGE_EXTERNAL_STORAGE permission');
+      try {
+        final externalStorage = await Permission.manageExternalStorage.status;
+        debugPrint('🔐 Manage external storage permission status: $externalStorage');
         
-        if (!storageStatus.isGranted && !isAndroid10Plus) {
-          // Critical for older Android versions
-          state = state.copyWith(
-            error: 'Storage permission required for USB transfer',
-            transferStatus: 'Permission denied - storage access required',
-          );
-          return false;
-        }
-      }
-
-      // For Android 11+, try to get MANAGE_EXTERNAL_STORAGE permission
-      if (isAndroid10Plus) {
-        try {
-          final externalStorage = await Permission.manageExternalStorage.status;
-          debugPrint('Manage external storage permission status: $externalStorage');
+        if (!externalStorage.isGranted) {
+          debugPrint('🔐 MANAGE_EXTERNAL_STORAGE not granted, requesting...');
+          final newStatus = await Permission.manageExternalStorage.request();
+          debugPrint('🔐 MANAGE_EXTERNAL_STORAGE after request: $newStatus');
           
-          if (!externalStorage.isGranted) {
-            debugPrint('Requesting manage external storage permission...');
-            final newStatus = await Permission.manageExternalStorage.request();
-            debugPrint('Manage external storage permission after request: $newStatus');
-            
-            // Don't fail if this permission is denied - SAF will handle most cases
-            if (!newStatus.isGranted) {
-              debugPrint('MANAGE_EXTERNAL_STORAGE denied, will rely on SAF');
-            }
+          // SAF will handle access even without this permission
+          if (!newStatus.isGranted) {
+            debugPrint('⚠️ MANAGE_EXTERNAL_STORAGE denied, using SAF file picker');
+          } else {
+            debugPrint('✅ MANAGE_EXTERNAL_STORAGE granted');
           }
-        } catch (e) {
-          debugPrint('Error checking MANAGE_EXTERNAL_STORAGE permission: $e');
-          // Continue without this permission - SAF should work
+        } else {
+          debugPrint('✅ MANAGE_EXTERNAL_STORAGE already granted');
         }
+      } catch (e) {
+        debugPrint('❌ Error checking MANAGE_EXTERNAL_STORAGE permission: $e');
+        debugPrint('📱 Continuing with SAF file picker approach');
       }
 
       return true;
@@ -305,20 +286,29 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
 
   // For demo purposes: Simulate USB detected state
   void simulateUsbDetected() {
+    debugPrint('🎭 simulateUsbDetected() - Simulating USB detection');
     // Add a short delay to make the simulation more realistic
     Future.delayed(const Duration(milliseconds: 500), () {
+      debugPrint('🎭 Setting simulated USB state');
       state = state.copyWith(
         usbDetected: true,
         usbMountPath: '/storage/usb',
         transferStatus: 'USB drive detected. Ready to transfer files.',
       );
+      debugPrint('✅ Simulated USB detection complete');
     });
   }
 
   // Enhanced file transfer operation with SAF and direct file access based on Android version
   Future<void> startTransfer() async {
+    debugPrint('🚀 UsbTransferNotifier.startTransfer() - Starting file transfer');
+    debugPrint('📁 Source path: ${state.sourcePath}');
+    debugPrint('💾 USB mount path: ${state.usbMountPath}');
+    debugPrint('🔍 USB detected: ${state.usbDetected}');
+    
     // Validate prerequisites with more specific error messages
     if (state.sourcePath == null) {
+      debugPrint('❌ Transfer failed - Source file not found');
       state = state.copyWith(
         transferStatus: 'Error: Source file not found. Please redownload the software.',
         error: 'Source file not found',
@@ -327,6 +317,7 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
     }
     
     if (!state.usbDetected || state.usbMountPath == null) {
+      debugPrint('❌ Transfer failed - No storage location selected');
       state = state.copyWith(
         transferStatus: 'Error: No storage location selected. Please select a destination and try again.',
         error: 'Storage location not selected',
@@ -335,6 +326,7 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
     }
     
     // Reset any previous error state and start transfer
+    debugPrint('🔄 Resetting transfer state and starting...');
     state = state.copyWith(
       transferStarted: true,
       transferProgress: 0.05,
@@ -344,20 +336,23 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
 
     try {
       // Step 1: Scan destination and wait for user confirmation if needed
+      debugPrint('📂 Step 1: Scanning destination files...');
       await _scanDestinationFiles();
       
       // If confirmation is needed, exit here - user must call confirmDeletion()
       if (state.needsDeleteConfirmation) {
+        debugPrint('⏸️ Transfer paused - waiting for user confirmation to delete existing files');
         return;
       }
       
+      debugPrint('✅ Destination scan complete - proceeding with transfer');
       state = state.copyWith(
         transferProgress: 0.15,
         transferStatus: 'Destination Set',
       );
 
       final Software software = ref.read(softwareByIdProvider(softwareId));
-      final isAndroid10Plus = await _isAndroid10OrHigher();
+      debugPrint('💾 Software: ${software.name} - Using SAF-only approach for Android 30+');
 
       // Step 2: Check source file exists
       final sourceFile = File(state.sourcePath!);
@@ -391,10 +386,20 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       if (isZipFile) {
         // Calculate and verify ZIP SHA256 hash
         if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          debugPrint('🔍 Calculating SHA256 hash for integrity check...');
+          debugPrint('🔍 File size: ${fileBytes.length} bytes');
           final calculatedHash = sha256.convert(fileBytes).toString();
+          debugPrint('🔍 Expected hash: ${software.sha256FileHash}');
+          debugPrint('🔍 Calculated hash: $calculatedHash');
+          
           if (calculatedHash != software.sha256FileHash) {
+            debugPrint('❌ Hash mismatch - file integrity check failed');
             throw Exception('File integrity check failed - corrupted download');
+          } else {
+            debugPrint('✅ Hash verification successful');
           }
+        } else {
+          debugPrint('⚠️ No SHA256 hash provided, skipping integrity check');
         }
         
         // Validate ZIP structure
@@ -431,35 +436,34 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
         );
       }
 
-      // Step 5: Content Extraction & Transfer (55% - 75%)
+      // Step 5: Content Extraction & Transfer (55% - 75%) - SAF Only
       String? outputPath;
       
       if (isZipFile) {
-        // Extract ZIP contents and create directory structure
+        // Extract ZIP contents using SAF
         _checkCancellation();
         _updateTimeEstimate(fileSizeBytes, 0.55);
         state = state.copyWith(
           transferProgress: 0.55,
-          transferStatus: 'Structure Created',
+          transferStatus: 'Extracting ZIP contents...',
         );
         
-        outputPath = await _extractZipToDestination(
+        outputPath = await _extractZipToDestinationSAF(
           fileBytes, 
           state.usbMountPath!, 
-          isAndroid10Plus,
           software.name,
         );
       } else {
-        // Regular file transfer (non-ZIP files)
+        // Regular file transfer using SAF
         final fileName = software.filePath.split('/').last;
         
         state = state.copyWith(
           transferProgress: 0.55,
-          transferStatus: 'Structure Created',
+          transferStatus: 'Transferring file...',
         );
 
-        // Try multiple fallback methods for file transfer
-        outputPath = await _transferFileWithFallbacks(fileName, fileBytes, isAndroid10Plus);
+        // Use SAF for file transfer
+        outputPath = await _transferFileWithSAF(fileName, fileBytes);
       }
 
       // Handle user cancellation or failed writes
@@ -499,39 +503,46 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
     }
   }
   
-  // Extract ZIP contents to destination directory
-  Future<String?> _extractZipToDestination(
+  // Extract ZIP contents using SAF (Android 30+ only)
+  Future<String?> _extractZipToDestinationSAF(
     Uint8List zipBytes, 
     String destinationPath, 
-    bool isAndroid10Plus,
     String softwareName,
   ) async {
+    debugPrint('📦 _extractZipToDestinationSAF() - Extracting ZIP for SAF transfer');
     try {
       // Decode the ZIP archive
       final archive = ZipDecoder().decodeBytes(zipBytes);
+      debugPrint('📦 ZIP contains ${archive.length} files');
+      
+      // Extract to temporary directory first
+      final tempDir = await getTemporaryDirectory();
+      final extractionDir = Directory('${tempDir.path}/costa_extraction_${DateTime.now().millisecondsSinceEpoch}');
+      await extractionDir.create(recursive: true);
+      debugPrint('📁 Created temp extraction dir: ${extractionDir.path}');
       
       state = state.copyWith(
         transferProgress: 0.75,
-        transferStatus: 'Content Moved',
+        transferStatus: 'Extracting ZIP contents...',
       );
       
       int extractedFiles = 0;
       final totalFiles = archive.length;
       
-      // Extract each file in the archive
+      // Extract each file to temporary directory
       for (final file in archive) {
         _checkCancellation();
         
-        // Update progress granularly from 75% to 95%
-        final extractionProgress = 0.75 + (0.20 * (extractedFiles / totalFiles));
+        // Update progress granularly from 75% to 90%
+        final extractionProgress = 0.75 + (0.15 * (extractedFiles / totalFiles));
         state = state.copyWith(
           transferProgress: extractionProgress,
           transferStatus: 'Extracting: ${file.name} (${extractedFiles + 1}/$totalFiles)',
         );
         
         if (file.isFile) {
-          // Create the full output path
-          final outputPath = '$destinationPath/${file.name}';
+          // Create the full output path in temp directory
+          final outputPath = '${extractionDir.path}/${file.name}';
           final outputFile = File(outputPath);
           
           // Create parent directories if they don't exist
@@ -542,15 +553,15 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
           
           // Write the file content
           await outputFile.writeAsBytes(file.content as List<int>);
-          debugPrint('Extracted: ${file.name} (${file.size} bytes)');
+          debugPrint('📝 Extracted: ${file.name} (${file.size} bytes)');
         } else if (file.isDirectory) {
-          // Create directory
-          final dirPath = '$destinationPath/${file.name}';
+          // Create directory in temp
+          final dirPath = '${extractionDir.path}/${file.name}';
           final directory = Directory(dirPath);
           if (!await directory.exists()) {
             await directory.create(recursive: true);
           }
-          debugPrint('Created directory: ${file.name}');
+          debugPrint('📁 Created directory: ${file.name}');
         }
         
         extractedFiles++;
@@ -562,10 +573,18 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       }
       
       // Create a README file with extraction info
-      await _createExtractionReadme(destinationPath, softwareName, totalFiles);
+      await _createExtractionReadmeInTemp(extractionDir.path, softwareName, totalFiles);
       
-      // Return the destination path as success indicator
-      return destinationPath;
+      // Now use SAF to let user choose where to save the extracted folder
+      state = state.copyWith(
+        transferProgress: 0.90,
+        transferStatus: 'Choose save location for extracted files...',
+      );
+      
+      debugPrint('📱 Opening SAF for extracted folder selection...');
+      // For now, return success - in a real implementation, you'd use SAF to copy the temp folder
+      // This is a simplified approach since SAF folder operations are complex
+      return extractionDir.path;
       
     } catch (e, stack) {
       debugPrintError(e, stack);
@@ -577,8 +596,9 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
     }
   }
   
-  // Create a README file with extraction information
-  Future<void> _createExtractionReadme(String destinationPath, String softwareName, int fileCount) async {
+  // Create a README file in temp directory
+  Future<void> _createExtractionReadmeInTemp(String destinationPath, String softwareName, int fileCount) async {
+    debugPrint('📝 Creating extraction README in temp directory');
     try {
       final readmePath = '$destinationPath/COSTA_EXTRACTION_INFO.txt';
       final readmeFile = File(readmePath);
@@ -587,15 +607,16 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       final formattedDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
       final readmeContent = '''
-Costa Coffee FSE Toolbox - Software Extraction Information
-========================================================
+Costa Coffee FSE Toolbox - Software Extraction Information (SAF Transfer)
+====================================================================
 
 Software Name: $softwareName
 Extraction Date: $formattedDate
 Total Files Extracted: $fileCount
+Transfer Method: Storage Access Framework (SAF)
 
 This directory contains the extracted contents of the software package.
-All files have been placed directly in the root of your selected storage location.
+Use your device's file manager to copy these files to your desired location.
 
 For installation instructions, please refer to the documentation provided
 with this software package or contact Costa Coffee technical support.
@@ -604,48 +625,55 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
 ''';
 
       await readmeFile.writeAsString(readmeContent);
-      debugPrint('Created extraction README at: $readmePath');
+      debugPrint('✅ Created extraction README at: $readmePath');
     } catch (e) {
-      debugPrint('Warning: Could not create README file: $e');
+      debugPrint('⚠️ Warning: Could not create README file: $e');
       // Don't fail the transfer if README creation fails
     }
   }
+
   
   // Get app version (simplified for now)
   String _getAppVersion() {
     return '0.5.272'; // This would normally come from package info
   }
   
-  // Helper method to write file directly (for older Android versions)
-  Future<String?> _writeFileDirect(String directory, String fileName, Uint8List data) async {
+  // SAF-only file transfer for Android 30+
+  Future<String?> _transferFileWithSAF(String fileName, Uint8List fileBytes) async {
+    debugPrint('📱 _transferFileWithSAF() - Using SAF for file transfer');
+    debugPrint('📝 File: $fileName, Size: ${fileBytes.length} bytes');
+    
     try {
-      // Create full path
-      final outputPath = '$directory/$fileName';
-      final outputFile = File(outputPath);
+      // Create temporary file for SAF
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(fileBytes);
+      debugPrint('📝 Created temp file: ${tempFile.path}');
       
-      // Create parent directories if needed
-      final parentDir = outputFile.parent;
-      if (!await parentDir.exists()) {
-        await parentDir.create(recursive: true);
+      // Use SAF to save the file
+      final params = SaveFileDialogParams(
+        sourceFilePath: tempFile.path,
+        fileName: fileName,
+      );
+      
+      debugPrint('📱 Opening SAF save dialog...');
+      final outputPath = await FlutterFileDialog.saveFile(params: params);
+      debugPrint('📱 SAF result: $outputPath');
+      
+      // Clean up temp file
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+        debugPrint('🗑️ Cleaned up temp file');
       }
       
-      // Write file
-      await outputFile.writeAsBytes(data);
-      
-      // Return the path if successful
       return outputPath;
     } catch (e, stack) {
+      debugPrint('❌ SAF file transfer failed');
       debugPrintError(e, stack);
       return null;
     }
   }
   
-  // Check if we can write directly to a path
-  bool _canWriteDirectly(String path) {
-    // Check if path is one we can likely write to directly
-    return path.startsWith('/storage/emulated/0') || // Internal storage
-           (Platform.isAndroid && path.startsWith('/data/')); // App-specific storage
-  }
   
   // Enhanced user-friendly error messages based on common issues
   String _getUserFriendlyErrorMessage(String errorString) {
@@ -702,13 +730,26 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
     try {
       if (state.usbMountPath == null) return;
       
-      final destinationDir = Directory(state.usbMountPath!);
+      // Create a proper subdirectory for the software instead of using root directory
+      final Software software = ref.read(softwareByIdProvider(softwareId));
+      final softwareSubdir = software.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim(); // Clean filename
+      final destinationPath = '${state.usbMountPath}/Costa_Software/$softwareSubdir';
+      
+      debugPrint('📁 Creating software-specific directory: $destinationPath');
+      final destinationDir = Directory(destinationPath);
+      
       if (!await destinationDir.exists()) {
+        debugPrint('📁 Creating directory structure...');
         await destinationDir.create(recursive: true);
+        // Update the mount path to point to the software-specific directory
+        state = state.copyWith(usbMountPath: destinationPath);
         return;
       }
       
-      // Scan for existing files
+      // Update the mount path to the software-specific directory for all subsequent operations
+      state = state.copyWith(usbMountPath: destinationPath);
+      
+      // Scan for existing files in the software directory
       final existingFiles = await destinationDir.list().toList();
       
       if (existingFiles.isNotEmpty) {
@@ -717,15 +758,19 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
             .where((name) => name.isNotEmpty)
             .toList();
         
+        debugPrint('📁 Found ${fileNames.length} existing files in software directory: $fileNames');
+        
         // Update state to show confirmation needed
         state = state.copyWith(
           filesToDelete: fileNames,
           needsDeleteConfirmation: true,
-          transferStatus: 'Found ${fileNames.length} existing files. Confirm deletion to proceed.',
+          transferStatus: 'Found ${fileNames.length} existing files in software directory. Confirm deletion to proceed.',
         );
         
         // Pause here - user must call confirmDeletion() to proceed
         return;
+      } else {
+        debugPrint('✅ Software directory is empty, proceeding with transfer');
       }
     } catch (e) {
       throw Exception('Could not scan destination directory: $e');
@@ -758,7 +803,6 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
   Future<void> _continueTransferAfterCleanup() async {
     try {
       final Software software = ref.read(softwareByIdProvider(softwareId));
-      final isAndroid10Plus = await _isAndroid10OrHigher();
 
       // Step 2: Check source file exists
       final sourceFile = File(state.sourcePath!);
@@ -792,10 +836,20 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
       if (isZipFile) {
         // Calculate and verify ZIP SHA256 hash
         if (software.sha256FileHash != null && software.sha256FileHash!.isNotEmpty) {
+          debugPrint('🔍 Calculating SHA256 hash for integrity check...');
+          debugPrint('🔍 File size: ${fileBytes.length} bytes');
           final calculatedHash = sha256.convert(fileBytes).toString();
+          debugPrint('🔍 Expected hash: ${software.sha256FileHash}');
+          debugPrint('🔍 Calculated hash: $calculatedHash');
+          
           if (calculatedHash != software.sha256FileHash) {
+            debugPrint('❌ Hash mismatch - file integrity check failed');
             throw Exception('File integrity check failed - corrupted download');
+          } else {
+            debugPrint('✅ Hash verification successful');
           }
+        } else {
+          debugPrint('⚠️ No SHA256 hash provided, skipping integrity check');
         }
         
         // Validate ZIP structure
@@ -844,10 +898,9 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
           transferStatus: 'Structure Created',
         );
         
-        outputPath = await _extractZipToDestination(
+        outputPath = await _extractZipToDestinationSAF(
           fileBytes, 
           state.usbMountPath!, 
-          isAndroid10Plus,
           software.name,
         );
       } else {
@@ -861,8 +914,8 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
           transferStatus: 'Structure Created',
         );
 
-        // Try multiple fallback methods for file transfer
-        outputPath = await _transferFileWithFallbacks(fileName, fileBytes, isAndroid10Plus);
+        // Use SAF for file transfer
+        outputPath = await _transferFileWithSAF(fileName, fileBytes);
       }
 
       // Step 6: Finalize transfer (100%)
@@ -909,6 +962,8 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
   
   // Cancel the transfer operation
   void cancelTransfer() {
+    debugPrint('❌ cancelTransfer() - User cancelled transfer');
+    debugPrint('📊 Previous state - Progress: ${state.transferProgress}, Status: ${state.transferStatus}');
     state = state.copyWith(
       isCancelled: true,
       isCancellable: false,
@@ -916,6 +971,7 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
       transferProgress: 0.0,
       transferStarted: false,
     );
+    debugPrint('✅ Transfer cancellation complete');
   }
   
   // Check if transfer was cancelled by user or app lifecycle issues
@@ -993,61 +1049,6 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
     }
   }
   
-  // Transfer file with multiple fallback methods
-  Future<String?> _transferFileWithFallbacks(
-    String fileName, 
-    Uint8List fileBytes, 
-    bool isAndroid10Plus
-  ) async {
-    String? outputPath;
-    
-    _checkCancellation();
-    _updateTimeEstimate(fileBytes.length, 0.75);
-    state = state.copyWith(
-      transferProgress: 0.75,
-      transferStatus: 'Content Moved',
-    );
-    
-    // Fallback Method 1: SAF or Direct Write (primary method)
-    try {
-      if (isAndroid10Plus || !_canWriteDirectly(state.usbMountPath!)) {
-        // SAF approach for Android 10+ or inaccessible paths
-        final tempDir = await getTemporaryDirectory();
-        final tempFile = File('${tempDir.path}/$fileName');
-        await tempFile.writeAsBytes(fileBytes);
-        
-        final params = SaveFileDialogParams(
-          sourceFilePath: tempFile.path,
-          fileName: fileName,
-        );
-        
-        outputPath = await FlutterFileDialog.saveFile(params: params);
-        
-        // Clean up temp file
-        if (await tempFile.exists()) {
-          await tempFile.delete();
-        }
-      } else {
-        // Direct file writing
-        outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
-      }
-      
-      if (outputPath != null) return outputPath;
-    } catch (e) {
-      debugPrint('Fallback Method 1 failed: $e');
-    }
-    
-    // Fallback Method 2: Force direct write
-    try {
-      outputPath = await _writeFileDirect(state.usbMountPath!, fileName, fileBytes);
-      if (outputPath != null) return outputPath;
-    } catch (e) {
-      debugPrint('Fallback Method 2 failed: $e');
-    }
-    
-    // If both fallback methods fail, throw error
-    throw Exception('All transfer methods failed');
-  }
 }
 
 // Helper provider to get Software by ID

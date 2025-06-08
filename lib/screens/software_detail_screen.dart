@@ -696,9 +696,19 @@ class UsbTransferWizard extends ConsumerWidget {
     final isTransferComplete = ref.watch(usb_transfer_providers.isTransferCompleteProvider(software.id));
     final transferProgress = ref.watch(usb_transfer_providers.transferProgressProvider(software.id));
     final transferStatus = ref.watch(usb_transfer_providers.transferStatusProvider(software.id));
+    final needsDeleteConfirmation = ref.watch(usb_transfer_providers.needsDeleteConfirmationProvider(software.id));
+    final filesToDelete = ref.watch(usb_transfer_providers.filesToDeleteProvider(software.id));
     
     // Get the notifier to modify state
     final notifier = ref.read(usbTransferNotifierProvider(software.id).notifier);
+    
+    // Show confirmation dialog when needed
+    if (needsDeleteConfirmation && filesToDelete.isNotEmpty) {
+      debugPrint('🚨 UI: Showing delete confirmation dialog for ${filesToDelete.length} files');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDeleteConfirmationDialog(context, filesToDelete, notifier);
+      });
+    }
     
     return Container(
       decoration: const BoxDecoration(
@@ -735,8 +745,11 @@ class UsbTransferWizard extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
+                    debugPrint('🖱️ UI: User clicked close button');
+                    debugPrint('🔍 UI: Transfer state - Started: $isTransferStarted, Complete: $isTransferComplete');
                     // Show confirmation dialog if transfer is in progress
                     if (isTransferStarted && !isTransferComplete) {
+                      debugPrint('⚠️ UI: Transfer in progress, showing confirmation dialog');
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
@@ -744,11 +757,15 @@ class UsbTransferWizard extends ConsumerWidget {
                           content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.'),
                           actions: [
                             TextButton(
-                              onPressed: () => context.pop(),
+                              onPressed: () {
+                                debugPrint('🖱️ UI: User chose to continue transfer');
+                                context.pop();
+                              },
                               child: const Text('Continue Transfer'),
                             ),
                             ElevatedButton(
                               onPressed: () {
+                                debugPrint('🖱️ UI: User confirmed transfer cancellation');
                                 context.pop(); // Close dialog
                                 context.pop(); // Close bottom sheet
                               },
@@ -762,6 +779,7 @@ class UsbTransferWizard extends ConsumerWidget {
                         ),
                       );
                     } else {
+                      debugPrint('✅ UI: No transfer in progress, closing wizard directly');
                       context.pop();
                     }
                   },
@@ -776,41 +794,54 @@ class UsbTransferWizard extends ConsumerWidget {
               child: Stepper(
         currentStep: currentStep,
         onStepContinue: () {
+          debugPrint('🖱️ UI: User clicked Continue button on step $currentStep');
           // Handle step-specific actions with improved async management
           if (currentStep == 0) {
-            // First, move to next step
+            // Move to next step (detectUsb will be called automatically by nextStep)
+            debugPrint('📝 UI: Moving from preparation step to USB detection');
             notifier.nextStep();
-            // Then start USB detection (prevents race conditions)
-            Future.microtask(() => notifier.detectUsb());
           } else if (currentStep == 1) {
             // We're at the USB detection step
+            debugPrint('📱 UI: Current step 1 - USB detection step');
+            debugPrint('🔍 UI: USB detected status: $isUsbDetected');
+            
             if (isUsbDetected) {
               // USB detected, first go to transfer step
+              debugPrint('✅ UI: USB detected, moving to transfer step');
               notifier.nextStep();
               // Then start transfer on the next frame to avoid state update conflicts
+              debugPrint('🚀 UI: Starting transfer via microtask');
               Future.microtask(() => notifier.startTransfer());
             } else {
               // First retry detection
+              debugPrint('🔄 UI: USB not detected, retrying detection');
               notifier.detectUsb();
               
               // For demo purposes only with improved async handling
               // In a real app, you'd rely on actual detection
+              debugPrint('🎭 UI: Starting demo USB simulation');
               Future.microtask(() {
                 // Delay detection for realistic simulation, but use microtask to avoid
                 // concurrent state modifications
                 Future.delayed(const Duration(milliseconds: 2000), () {
+                  debugPrint('🎭 UI: Triggering simulated USB detection after 2s delay');
                   notifier.simulateUsbDetected();
                 });
               });
             }
           } else if (currentStep == 2 && isTransferComplete) {
             // Done with transfer, can close the wizard
+            debugPrint('✅ UI: Transfer complete, closing wizard');
             context.pop();
           }
         },
         onStepCancel: () {
+          debugPrint('🖱️ UI: User clicked Cancel/Back button on step $currentStep');
           if (currentStep > 0) {
+            debugPrint('📉 UI: Moving back from step $currentStep');
             notifier.previousStep();
+          } else {
+            debugPrint('⚠️ UI: Already at first step, cannot go back');
           }
         },
         controlsBuilder: (context, details) {
@@ -1183,9 +1214,12 @@ class UsbTransferWizard extends ConsumerWidget {
                             Center(
                               child: ElevatedButton.icon(
                                 onPressed: () {
+                                  debugPrint('🖱️ UI: User clicked Retry button on step $currentStep');
                                   if (currentStep == 1) {
+                                    debugPrint('🔄 UI: Retrying USB detection');
                                     notifier.detectUsb();
                                   } else {
+                                    debugPrint('🔄 UI: Retrying transfer');
                                     notifier.startTransfer();
                                   }
                                 },
@@ -1516,6 +1550,82 @@ class UsbTransferWizard extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+  
+  // Show confirmation dialog for file deletion
+  void _showDeleteConfirmationDialog(BuildContext context, List<String> filesToDelete, UsbTransferNotifier notifier) {
+    debugPrint('🚨 _showDeleteConfirmationDialog() - Files to delete: $filesToDelete');
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Files Found'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Found ${filesToDelete.length} existing file(s) in the destination:'),
+              const SizedBox(height: 12),
+              Container(
+                height: 120,
+                width: double.maxFinite,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: ListView.builder(
+                  itemCount: filesToDelete.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: Text(
+                        '• ${filesToDelete[index]}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'These files will be deleted to make room for the new software. Continue?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                debugPrint('🖱️ UI: User cancelled file deletion');
+                Navigator.of(dialogContext).pop();
+                notifier.cancelDeletion();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                debugPrint('🖱️ UI: User confirmed file deletion');
+                Navigator.of(dialogContext).pop();
+                notifier.confirmDeletion();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete & Continue'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

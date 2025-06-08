@@ -158,7 +158,7 @@ class _SoftwareByIdProviderElement extends AutoDisposeProviderElement<Software>
 }
 
 String _$usbTransferNotifierHash() =>
-    r'f504c77f2efdfc104e7abddc048448f540c95387';
+    r'e803e79a122786ce52b437f12087beeca9948d9a';
 
 abstract class _$UsbTransferNotifier
     extends BuildlessAutoDisposeNotifier<UsbTransferState> {
