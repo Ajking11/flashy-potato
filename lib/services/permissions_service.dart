@@ -11,25 +11,25 @@ class PermissionsService {
 
   /// Check if the app has shown the permissions intro screen
   static Future<bool> hasSeenPermissionIntro() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_hasSeenPermissionIntro) ?? false;
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getBool(_hasSeenPermissionIntro) ?? false;
   }
 
   /// Mark that the user has seen the permissions intro screen
   static Future<void> markPermissionIntroSeen() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     await prefs.setBool(_hasSeenPermissionIntro, true);
   }
 
   /// Check if the app has already asked for permissions
   static Future<bool> hasAskedForPermissions() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_hasAskedForPermissions) ?? false;
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getBool(_hasAskedForPermissions) ?? false;
   }
 
   /// Mark that the app has asked for permissions
   static Future<void> markPermissionsAsked() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     await prefs.setBool(_hasAskedForPermissions, true);
   }
 

@@ -6,7 +6,7 @@ part of 'filter_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$filterNotifierHash() => r'53db4e3d42d7a7a42eb00e89b7845a0a1e8263c1';
+String _$filterNotifierHash() => r'ceb3bbaf7dda22e5fef13edc1e84176675da200b';
 
 /// See also [FilterNotifier].
 @ProviderFor(FilterNotifier)

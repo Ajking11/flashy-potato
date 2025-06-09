@@ -22,7 +22,7 @@ class OfflineStorageService {
     return _database!;
   }
   
-  Future<SharedPreferences> get _prefs async => await SharedPreferences.getInstance();
+  final _prefs = SharedPreferencesAsync();
   
   // Enhanced Document operations with Drift
   Future<void> saveDocumentsOffline(List<TechnicalDocument> documents) async {
@@ -31,9 +31,8 @@ class OfflineStorageService {
       await database.insertOrUpdateDocuments(documents);
       
       // Keep SharedPreferences for backward compatibility
-      final prefs = await _prefs;
       final documentsJson = documents.map((doc) => doc.toJson()).toList();
-      await prefs.setString(_documentsKey, jsonEncode(documentsJson));
+      await _prefs.setString(_documentsKey, jsonEncode(documentsJson));
       
       // Update sync metadata
       await database.updateSyncMetadata('documents', documents.length);
@@ -55,8 +54,7 @@ class OfflineStorageService {
       }
       
       // Fallback to SharedPreferences for backward compatibility
-      final prefs = await _prefs;
-      final documentsJsonString = prefs.getString(_documentsKey);
+      final documentsJsonString = await _prefs.getString(_documentsKey);
       
       if (documentsJsonString == null) {
         debugPrint('No offline documents found');
@@ -129,9 +127,8 @@ class OfflineStorageService {
       await database.insertOrUpdateSoftwares(software);
       
       // Keep SharedPreferences for backward compatibility
-      final prefs = await _prefs;
       final softwareJson = software.map((sw) => sw.toJson()).toList();
-      await prefs.setString(_softwareKey, jsonEncode(softwareJson));
+      await _prefs.setString(_softwareKey, jsonEncode(softwareJson));
       
       // Update sync metadata
       await database.updateSyncMetadata('software', software.length);
@@ -153,8 +150,7 @@ class OfflineStorageService {
       }
       
       // Fallback to SharedPreferences for backward compatibility
-      final prefs = await _prefs;
-      final softwareJsonString = prefs.getString(_softwareKey);
+      final softwareJsonString = await _prefs.getString(_softwareKey);
       
       if (softwareJsonString == null) {
         debugPrint('No offline software found');
@@ -227,9 +223,8 @@ class OfflineStorageService {
       await database.insertOrUpdateMachines(machines);
       
       // Keep SharedPreferences for backward compatibility
-      final prefs = await _prefs;
       final machinesJson = machines.map((machine) => machine.toJson()).toList();
-      await prefs.setString(_machinesKey, jsonEncode(machinesJson));
+      await _prefs.setString(_machinesKey, jsonEncode(machinesJson));
       
       // Update sync metadata
       await database.updateSyncMetadata('machines', machines.length);
@@ -251,8 +246,7 @@ class OfflineStorageService {
       }
       
       // Fallback to SharedPreferences for backward compatibility
-      final prefs = await _prefs;
-      final machinesJsonString = prefs.getString(_machinesKey);
+      final machinesJsonString = await _prefs.getString(_machinesKey);
       
       if (machinesJsonString == null) {
         debugPrint('No offline machines found');
@@ -294,8 +288,7 @@ class OfflineStorageService {
   // Sync timestamp operations
   Future<void> updateLastSyncTimestamp() async {
     try {
-      final prefs = await _prefs;
-      await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+      await _prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
       debugPrint('Updated last sync timestamp');
     } catch (e) {
       debugPrint('Error updating sync timestamp: $e');
@@ -304,8 +297,7 @@ class OfflineStorageService {
 
   Future<DateTime?> getLastSyncTimestamp() async {
     try {
-      final prefs = await _prefs;
-      final timestampString = prefs.getString(_lastSyncKey);
+      final timestampString = await _prefs.getString(_lastSyncKey);
       
       if (timestampString == null) {
         return null;
@@ -321,8 +313,7 @@ class OfflineStorageService {
   // Pending uploads for when user goes back online
   Future<void> addPendingUpload(Map<String, dynamic> uploadData) async {
     try {
-      final prefs = await _prefs;
-      final pendingUploadsJson = prefs.getString(_pendingUploadsKey);
+      final pendingUploadsJson = await _prefs.getString(_pendingUploadsKey);
       
       List<Map<String, dynamic>> pendingUploads = [];
       if (pendingUploadsJson != null) {
@@ -331,7 +322,7 @@ class OfflineStorageService {
       }
       
       pendingUploads.add(uploadData);
-      await prefs.setString(_pendingUploadsKey, jsonEncode(pendingUploads));
+      await _prefs.setString(_pendingUploadsKey, jsonEncode(pendingUploads));
       debugPrint('Added pending upload');
     } catch (e) {
       debugPrint('Error adding pending upload: $e');
@@ -340,8 +331,7 @@ class OfflineStorageService {
 
   Future<List<Map<String, dynamic>>> getPendingUploads() async {
     try {
-      final prefs = await _prefs;
-      final pendingUploadsJson = prefs.getString(_pendingUploadsKey);
+      final pendingUploadsJson = await _prefs.getString(_pendingUploadsKey);
       
       if (pendingUploadsJson == null) {
         return [];
@@ -357,8 +347,7 @@ class OfflineStorageService {
 
   Future<void> clearPendingUploads() async {
     try {
-      final prefs = await _prefs;
-      await prefs.remove(_pendingUploadsKey);
+      await _prefs.remove(_pendingUploadsKey);
       debugPrint('Cleared pending uploads');
     } catch (e) {
       debugPrint('Error clearing pending uploads: $e');
@@ -490,12 +479,11 @@ class OfflineStorageService {
       await database.clearAllData();
       
       // Clear SharedPreferences
-      final prefs = await _prefs;
-      await prefs.remove(_documentsKey);
-      await prefs.remove(_softwareKey);
-      await prefs.remove(_machinesKey);
-      await prefs.remove(_lastSyncKey);
-      await prefs.remove(_pendingUploadsKey);
+      await _prefs.remove(_documentsKey);
+      await _prefs.remove(_softwareKey);
+      await _prefs.remove(_machinesKey);
+      await _prefs.remove(_lastSyncKey);
+      await _prefs.remove(_pendingUploadsKey);
       
       // Clear offline files
       final offlineDir = await getOfflineFilesDirectory();

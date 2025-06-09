@@ -392,7 +392,7 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
           debugPrint('🔍 Expected hash: ${software.sha256FileHash}');
           debugPrint('🔍 Calculated hash: $calculatedHash');
           
-          if (calculatedHash != software.sha256FileHash) {
+          if (calculatedHash.toLowerCase() != software.sha256FileHash!.toLowerCase()) {
             debugPrint('❌ Hash mismatch - file integrity check failed');
             throw Exception('File integrity check failed - corrupted download');
           } else {
@@ -575,16 +575,157 @@ class UsbTransferNotifier extends _$UsbTransferNotifier {
       // Create a README file with extraction info
       await _createExtractionReadmeInTemp(extractionDir.path, softwareName, totalFiles);
       
-      // Now use SAF to let user choose where to save the extracted folder
+      // Now copy the extracted files directly to the destination directory
       state = state.copyWith(
         transferProgress: 0.90,
-        transferStatus: 'Choose save location for extracted files...',
+        transferStatus: 'Transferring extracted files to USB...',
       );
       
-      debugPrint('📱 Opening SAF for extracted folder selection...');
-      // For now, return success - in a real implementation, you'd use SAF to copy the temp folder
-      // This is a simplified approach since SAF folder operations are complex
-      return extractionDir.path;
+      debugPrint('📱 Transferring $totalFiles extracted files to destination: $destinationPath');
+      
+      // Try directory selection approach first (better UX)
+      final extractedFilesList = await extractionDir.list().toList();
+      int transferredFiles = 0;
+      String? lastOutputPath;
+      
+      state = state.copyWith(
+        transferProgress: 0.90,
+        transferStatus: 'Please select destination folder for extracted files...',
+      );
+      
+      debugPrint('📁 Attempting directory selection for batch file save...');
+      
+      try {
+        // Try to pick a directory first
+        final DirectoryLocation? selectedDirectory = await FlutterFileDialog.pickDirectory();
+        
+        if (selectedDirectory != null) {
+          debugPrint('✅ Directory selected, saving files to directory...');
+          
+          // Save all files to the selected directory
+          bool foundDuplicates = false;
+          
+          for (final entity in extractedFilesList) {
+            if (entity is File && !entity.path.endsWith('COSTA_EXTRACTION_INFO.txt')) {
+              try {
+                final fileName = entity.path.split('/').last;
+                final fileBytes = await entity.readAsBytes();
+                
+                debugPrint('📝 Saving file to directory: $fileName');
+                
+                final outputPath = await FlutterFileDialog.saveFileToDirectory(
+                  directory: selectedDirectory,
+                  data: fileBytes,
+                  fileName: fileName,
+                  mimeType: 'application/octet-stream',
+                  replace: true, // Try to replace existing files
+                );
+                
+                if (outputPath != null) {
+                  // Check if the system created a duplicate name (e.g., "file(1).cud")
+                  final savedFileName = outputPath.split('/').last;
+                  if (savedFileName != fileName) {
+                    debugPrint('⚠️ File was renamed to avoid conflict: $fileName → $savedFileName');
+                    foundDuplicates = true;
+                  }
+                  
+                  transferredFiles++;
+                  lastOutputPath = outputPath;
+                  debugPrint('✅ Saved to directory: $fileName → $outputPath');
+                  
+                  // Update progress
+                  final transferProgress = 0.90 + (0.10 * (transferredFiles / totalFiles));
+                  state = state.copyWith(
+                    transferProgress: transferProgress,
+                    transferStatus: 'Saved $transferredFiles of $totalFiles files to selected folder',
+                  );
+                } else {
+                  debugPrint('⚠️ saveFileToDirectory returned null for $fileName');
+                }
+              } catch (e) {
+                debugPrint('❌ Failed to save file ${entity.path} to directory: $e');
+                // Continue with other files
+              }
+            }
+          }
+          
+          if (transferredFiles > 0) {
+            if (foundDuplicates) {
+              debugPrint('⚠️ Some files were renamed due to conflicts - consider using individual saves for better control');
+            }
+            debugPrint('✅ Successfully saved $transferredFiles files to selected directory');
+          }
+        } else {
+          debugPrint('❌ User cancelled directory selection');
+          throw Exception('Directory selection cancelled');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Directory selection failed: $e');
+        debugPrint('📱 Falling back to individual file saves...');
+        
+        // Fallback: Individual file saves (current approach)
+        transferredFiles = 0;
+        lastOutputPath = null;
+        
+        state = state.copyWith(
+          transferProgress: 0.90,
+          transferStatus: 'Please select save location for each extracted file...',
+        );
+        
+        for (final entity in extractedFilesList) {
+          if (entity is File && !entity.path.endsWith('COSTA_EXTRACTION_INFO.txt')) {
+            try {
+              final fileName = entity.path.split('/').last;
+              
+              debugPrint('📝 Saving extracted file individually: $fileName');
+              
+              // Use SAF to save each extracted file
+              final params = SaveFileDialogParams(
+                sourceFilePath: entity.path,
+                fileName: fileName,
+              );
+              
+              final outputPath = await FlutterFileDialog.saveFile(params: params);
+              if (outputPath != null) {
+                transferredFiles++;
+                lastOutputPath = outputPath;
+                debugPrint('✅ Saved individually: $fileName to $outputPath');
+                
+                // Update progress
+                final transferProgress = 0.90 + (0.10 * (transferredFiles / totalFiles));
+                state = state.copyWith(
+                  transferProgress: transferProgress,
+                  transferStatus: 'Saved $transferredFiles of $totalFiles files individually',
+                );
+              } else {
+                debugPrint('❌ User cancelled save for file: $fileName');
+                // Clean up temp directory before returning null
+                if (await extractionDir.exists()) {
+                  await extractionDir.delete(recursive: true);
+                }
+                return null;
+              }
+            } catch (e) {
+              debugPrint('❌ Failed to save file ${entity.path}: $e');
+              // Continue with other files instead of failing completely
+            }
+          }
+        }
+      }
+      
+      // Clean up temp directory
+      if (await extractionDir.exists()) {
+        await extractionDir.delete(recursive: true);
+        debugPrint('🗑️ Cleaned up temp extraction directory');
+      }
+      
+      if (transferredFiles > 0) {
+        debugPrint('✅ Successfully saved $transferredFiles individual files to USB drive');
+        return lastOutputPath;
+      } else {
+        debugPrint('❌ No files were saved');
+        return null;
+      }
       
     } catch (e, stack) {
       debugPrintError(e, stack);
@@ -735,7 +876,20 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
       final softwareSubdir = software.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim(); // Clean filename
       final destinationPath = '${state.usbMountPath}/Costa_Software/$softwareSubdir';
       
-      debugPrint('📁 Creating software-specific directory: $destinationPath');
+      debugPrint('📁 Target directory path: $destinationPath');
+      
+      // Check if we're dealing with external storage (e.g., /storage/XXXX-XXXX)
+      final isExternalStorage = state.usbMountPath!.startsWith('/storage/');
+      
+      if (isExternalStorage) {
+        // For external storage, skip direct filesystem operations due to permission restrictions
+        // SAF will handle directory creation automatically during file transfer
+        debugPrint('📁 External storage detected - skipping direct directory operations, SAF will handle structure');
+        state = state.copyWith(usbMountPath: destinationPath);
+        return;
+      }
+      
+      // For internal storage or other accessible paths, perform normal directory operations
       final destinationDir = Directory(destinationPath);
       
       if (!await destinationDir.exists()) {
@@ -1033,6 +1187,17 @@ Generated by Costa FSE Toolbox v${_getAppVersion()}
   Future<void> _performCleanup() async {
     if (state.usbMountPath == null) return;
     
+    // Check if we're dealing with external storage (e.g., /storage/XXXX-XXXX)
+    final isExternalStorage = state.usbMountPath!.startsWith('/storage/');
+    
+    if (isExternalStorage) {
+      // For external storage, skip direct filesystem operations due to permission restrictions
+      // SAF operations will overwrite existing files automatically, so cleanup isn't needed
+      debugPrint('📁 External storage detected - skipping cleanup, SAF will handle file overwrites');
+      return;
+    }
+    
+    // For internal storage or other accessible paths, perform normal cleanup
     final destinationDir = Directory(state.usbMountPath!);
     final existingFiles = await destinationDir.list().toList();
     

@@ -161,8 +161,8 @@ class FilterNotifier extends _$FilterNotifier {
   // Load saved filter recommendations from SharedPreferences
   Future<void> _loadSavedRecommendations() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedRecsJson = prefs.getStringList('savedFilterRecommendations') ?? [];
+      final prefs = SharedPreferencesAsync();
+      final savedRecsJson = await prefs.getStringList('savedFilterRecommendations') ?? [];
       
       final savedRecs = savedRecsJson
           .map((json) => FilterRecommendation.fromJson(jsonDecode(json)))
@@ -220,7 +220,7 @@ class FilterNotifier extends _$FilterNotifier {
       state = state.copyWith(savedRecommendations: updatedRecs);
       
       // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = SharedPreferencesAsync();
       final jsonList = updatedRecs.map((rec) => jsonEncode(rec.toJson())).toList();
       await prefs.setStringList('savedFilterRecommendations', jsonList);
     } catch (e) {
@@ -241,7 +241,7 @@ class FilterNotifier extends _$FilterNotifier {
       state = state.copyWith(savedRecommendations: updatedRecs);
       
       // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = SharedPreferencesAsync();
       final jsonList = updatedRecs.map((rec) => jsonEncode(rec.toJson())).toList();
       await prefs.setStringList('savedFilterRecommendations', jsonList);
     } catch (e) {
@@ -273,7 +273,7 @@ class FilterNotifier extends _$FilterNotifier {
       state = state.copyWith(savedRecommendations: []);
       
       // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = SharedPreferencesAsync();
       await prefs.setStringList('savedFilterRecommendations', []);
     } catch (e) {
       debugPrint('Error clearing recommendations: $e');

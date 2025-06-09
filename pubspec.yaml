@@ -19,7 +19,8 @@ dependencies:
       url: https://github.com/SamuelGadiel/packages.flutter.git
       path: packages/pdfx
   path_provider: ^2.1.2
-  shared_preferences: ^2.5.2
+  shared_preferences: ^2.5.3
+  shared_preferences_android: ^2.4.10
   crypto: ^3.0.6
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1
@@ -61,9 +62,9 @@ flutter:
     - assets/standard_filter_capacities.json
 
     # Documents
-    - assets/documents/schaerer_scb_parts.pdf
-    - assets/documents/soul_s10_installation_manual.pdf
-    - assets/documents/soul_s10_spare_parts.pdf
+    #- assets/documents/schaerer_scb_parts.pdf
+    #- assets/documents/soul_s10_installation_manual.pdf
+    #- assets/documents/soul_s10_spare_parts.pdf
     
     # Images
     - assets/images/c50.png
@@ -71,15 +72,15 @@ flutter:
     - assets/images/c500.png
     - assets/images/c1100.png
     - assets/images/svcpd.png
-    - assets/images/MK2.png
-    - assets/images/MK3.png
-    - assets/images/MK4.png
-    - assets/images/SOULS10.png
-    - assets/images/MARLOW.png
-    - assets/images/MARLOW12.png
-    - assets/images/brewer.png
-    - assets/images/boiler.png
-    - assets/images/grinder.png
+    #- assets/images/MK2.png
+    #- assets/images/MK3.png
+    #- assets/images/MK4.png
+    #- assets/images/SOULS10.png
+    #- assets/images/MARLOW.png
+    #- assets/images/MARLOW12.png
+    #- assets/images/brewer.png
+    #- assets/images/boiler.png
+    #- assets/images/grinder.png
     
     # Backgrounds
     - assets/background/bluewave.png

@@ -656,19 +656,13 @@ class SoftwareDetailScreen extends ConsumerWidget {
   
   // Shows an interactive USB loading wizard using Riverpod for state management
   void _showUsbLoadingDialog(BuildContext context, Software software) {
-    // Launch the USB transfer wizard with the software
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      enableDrag: false,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => ProviderScope(
+    // Launch the USB transfer wizard as a fullscreen dialog
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => ProviderScope(
           child: UsbTransferWizard(
             software: software,
-            scrollController: scrollController,
           ),
         ),
       ),
@@ -679,12 +673,10 @@ class SoftwareDetailScreen extends ConsumerWidget {
 // USB Transfer Wizard Screen with Riverpod
 class UsbTransferWizard extends ConsumerWidget {
   final Software software;
-  final ScrollController? scrollController;
   
   const UsbTransferWizard({
     super.key,
     required this.software,
-    this.scrollController,
   });
 
   @override
@@ -710,89 +702,165 @@ class UsbTransferWizard extends ConsumerWidget {
       });
     }
     
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Scaffold(
+      backgroundColor: italianPorcelain,
+      appBar: AppBar(
+        backgroundColor: costaRed,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'USB Transfer Wizard',
+          style: CostaTextStyle.appBarTitle.copyWith(color: Colors.white),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            debugPrint('🖱️ UI: User clicked close button');
+            debugPrint('🔍 UI: Transfer state - Started: $isTransferStarted, Complete: $isTransferComplete');
+            // Show confirmation dialog if transfer is in progress
+            if (isTransferStarted && !isTransferComplete) {
+              debugPrint('⚠️ UI: Transfer in progress, showing confirmation dialog');
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Cancel Transfer?', style: CostaTextStyle.headline2),
+                  content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.', style: CostaTextStyle.bodyText1),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        debugPrint('🖱️ UI: User chose to continue transfer');
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Continue Transfer', style: CostaTextStyle.button.copyWith(color: costaRed)),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        debugPrint('🖱️ UI: User confirmed transfer cancellation');
+                        Navigator.of(context).pop(); // Close dialog
+                        Navigator.of(context).pop(); // Close wizard
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentRed,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: Text('Cancel Transfer', style: CostaTextStyle.button.copyWith(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              debugPrint('✅ UI: No transfer in progress, closing wizard directly');
+              Navigator.of(context).pop();
+            }
+          },
         ),
       ),
-      child: Column(
+      body: Column(
         children: [
-          // Header with close button
+          // Software info header
           Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                const Expanded(
-                  child: Text(
-                    'USB Transfer Wizard',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: costaRed,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    debugPrint('🖱️ UI: User clicked close button');
-                    debugPrint('🔍 UI: Transfer state - Started: $isTransferStarted, Complete: $isTransferComplete');
-                    // Show confirmation dialog if transfer is in progress
-                    if (isTransferStarted && !isTransferComplete) {
-                      debugPrint('⚠️ UI: Transfer in progress, showing confirmation dialog');
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Cancel Transfer?'),
-                          content: const Text('Are you sure you want to cancel the transfer? The process will be interrupted.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                debugPrint('🖱️ UI: User chose to continue transfer');
-                                context.pop();
-                              },
-                              child: const Text('Continue Transfer'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                debugPrint('🖱️ UI: User confirmed transfer cancellation');
-                                context.pop(); // Close dialog
-                                context.pop(); // Close bottom sheet
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Cancel Transfer'),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      debugPrint('✅ UI: No transfer in progress, closing wizard directly');
-                      context.pop();
-                    }
-                  },
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Transferring Software',
+                        style: CostaTextStyle.caption.copyWith(color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        software.name,
+                        style: CostaTextStyle.button.copyWith(color: deepRed),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          // Content
+          // Stepper content
           Expanded(
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Stepper(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: Theme.of(context).colorScheme.copyWith(
+                    primary: costaRed,
+                  ),
+                ),
+                child: Stepper(
         currentStep: currentStep,
+        controlsBuilder: (context, details) {
+          return Row(
+            children: [
+              if (details.onStepContinue != null)
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: details.onStepContinue,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: costaRed,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      _getStepButtonText(currentStep, isUsbDetected, isTransferComplete),
+                      style: CostaTextStyle.button.copyWith(color: Colors.white),
+                    ),
+                  ),
+                ),
+              if (details.onStepCancel != null) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: details.onStepCancel,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: costaRed),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      currentStep > 0 ? 'Back' : 'Cancel',
+                      style: CostaTextStyle.button.copyWith(color: costaRed),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
         onStepContinue: () {
           debugPrint('🖱️ UI: User clicked Continue button on step $currentStep');
           // Handle step-specific actions with improved async management
@@ -844,68 +912,26 @@ class UsbTransferWizard extends ConsumerWidget {
             debugPrint('⚠️ UI: Already at first step, cannot go back');
           }
         },
-        controlsBuilder: (context, details) {
-          // Custom controls based on current step
-          final bool isFirstStep = details.currentStep == 0;
-          final bool isLastStep = details.currentStep == 2;
-          
-          // Button text varies by step
-          String continueText = 'Continue';
-          if (details.currentStep == 0) {
-            continueText = 'Select Storage Location';
-          } else if (details.currentStep == 1) {
-            continueText = isUsbDetected ? 'Start Transfer' : 'Select Location';
-          } else if (details.currentStep == 2) {
-            continueText = isTransferComplete ? 'Finish' : 'Transferring...';
-          }
-          
-          return Padding(
-            padding: const EdgeInsets.only(top: 16.0),
-            child: Row(
-              children: [
-                ElevatedButton(
-                  onPressed: (details.currentStep == 2 && !isTransferComplete) ? null : details.onStepContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    // Disable button when waiting or transferring
-                    disabledBackgroundColor: Colors.blue.withValues(alpha: 0.5),
-                    disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
-                  ),
-                  child: Text(continueText),
-                ),
-                if (!isFirstStep && !isLastStep)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: TextButton(
-                      onPressed: details.onStepCancel,
-                      child: const Text('Back'),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
         steps: [
           // Step 1: Introduction
           Step(
-            title: const Text('Prepare External Storage'),
-            subtitle: const Text('Get your storage device ready'),
+            title: Text('Prepare External Storage', style: CostaTextStyle.subtitle2.copyWith(color: deepRed)),
+            subtitle: Text('Get your storage device ready', style: CostaTextStyle.caption.copyWith(color: Colors.grey.shade600)),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'This wizard will help you transfer the software package to external storage or USB drive.',
-                  style: TextStyle(fontSize: 16),
+                  style: CostaTextStyle.bodyText1,
                 ),
                 const SizedBox(height: 12),
                 // Software details
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
+                    color: latte.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: latte),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,10 +946,7 @@ class UsbTransferWizard extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Text(
                             software.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                            style: CostaTextStyle.button.copyWith(color: deepRed),
                           ),
                           const Spacer(),
                           Container(
@@ -946,7 +969,7 @@ class UsbTransferWizard extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         'Size: ${software.fileSizeKB} KB',
-                        style: const TextStyle(fontSize: 14),
+                        style: CostaTextStyle.caption.copyWith(color: Colors.grey.shade700),
                       ),
                     ],
                   ),
@@ -955,16 +978,16 @@ class UsbTransferWizard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
+                    color: costaRed.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: costaRed.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Before continuing:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: CostaTextStyle.button.copyWith(color: costaRed),
                       ),
                       const SizedBox(height: 8),
                       _buildCheckItem('Connect your USB drive or prepare external storage', true),
@@ -1367,6 +1390,7 @@ class UsbTransferWizard extends ConsumerWidget {
             state: isTransferComplete ? StepState.complete : StepState.indexed,
           ),
         ],
+                ),
               ),
             ),
           ),
@@ -1551,6 +1575,20 @@ class UsbTransferWizard extends ConsumerWidget {
         ],
       ),
     );
+  }
+  
+  // Helper method for dynamic button text
+  String _getStepButtonText(int currentStep, bool isUsbDetected, bool isTransferComplete) {
+    switch (currentStep) {
+      case 0:
+        return 'Select Storage';
+      case 1:
+        return isUsbDetected ? 'Start Transfer' : 'Select Storage';
+      case 2:
+        return isTransferComplete ? 'Finish' : 'Transferring...';
+      default:
+        return 'Continue';
+    }
   }
   
   // Show confirmation dialog for file deletion

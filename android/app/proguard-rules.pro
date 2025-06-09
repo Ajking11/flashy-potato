@@ -1,1 +1,4 @@
 -keep class dev.fluttercommunity.plus.device_info.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class io.flutter.plugins.sharedpreferences.** { *; }
+-keep class androidx.** { *; }

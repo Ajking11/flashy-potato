@@ -190,10 +190,10 @@ class NotificationService {
   
   /// Initialize notification settings from preferences
   Future<void> _initializeSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final notificationsEnabled = prefs.getBool(_keyNotificationsEnabled) ?? true;
-    final documentsEnabled = prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
-    final softwareEnabled = prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
+    final prefs = SharedPreferencesAsync();
+    final notificationsEnabled = await prefs.getBool(_keyNotificationsEnabled) ?? true;
+    final documentsEnabled = await prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
+    final softwareEnabled = await prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
     
     // Subscribe to topics based on saved preferences
     if (notificationsEnabled) {
@@ -326,12 +326,12 @@ class NotificationService {
   
   /// Enable all notifications
   Future<void> enableNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     await prefs.setBool(_keyNotificationsEnabled, true);
     
     // Re-subscribe to saved topics
-    final documentsEnabled = prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
-    final softwareEnabled = prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
+    final documentsEnabled = await prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
+    final softwareEnabled = await prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
     
     if (documentsEnabled) {
       await subscribeToDocumentUpdates();
@@ -346,7 +346,7 @@ class NotificationService {
   
   /// Disable all notifications
   Future<void> disableNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     await prefs.setBool(_keyNotificationsEnabled, false);
     
     // Unsubscribe from all topics
@@ -358,25 +358,25 @@ class NotificationService {
   
   /// Check if notifications are enabled
   Future<bool> areNotificationsEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyNotificationsEnabled) ?? true;
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getBool(_keyNotificationsEnabled) ?? true;
   }
   
   /// Check if document notifications are enabled
   Future<bool> areDocumentNotificationsEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getBool(_keyDocumentsNotificationsEnabled) ?? true;
   }
   
   /// Check if software notifications are enabled
   Future<bool> areSoftwareNotificationsEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getBool(_keySoftwareNotificationsEnabled) ?? true;
   }
   
   /// Save topic subscription preference
   Future<void> _saveTopicPreference(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     await prefs.setBool(key, value);
   }
   
